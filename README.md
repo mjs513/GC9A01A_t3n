@@ -1,10 +1,10 @@
 Overview and Warning: 
 =====
-This Arduino library is for driving ILI9341 displays on Teensy 3.x or 4.x boards from 
+This Arduino library is for driving GC9A01A displays on Teensy 3.x or 4.x boards from 
 PJRC(https://www.pjrc.com/) and I have played with it on a few different
 ILI9341 displays including ones from PJRC such as: https://www.pjrc.com/store/display_ili9341_touch.html and ones from Adafruit such as: https://www.adafruit.com/product/1770
 
-This is a modified version of the official PJRC ILI9341_t3 library (https://github.com/PaulStoffregen/ILI9341_t3).
+This is a modified version of the official PJRC ILI9341_t3n library (https://github.com/PaulStoffregen/ILI9341_t3).
 And it is always a Work In Progress.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -28,7 +28,7 @@ This library was developed to allow you to use any of the SPI busses on a Teensy
 It detects this by looking at which pins were specified on the constructor. 
 
 ```
-  ILI9341_t3n(uint8_t _CS, uint8_t _DC, uint8_t _RST = 255, uint8_t _MOSI = 11,
+  GC9A01A_t3n(uint8_t _CS, uint8_t _DC, uint8_t _RST = 255, uint8_t _MOSI = 11,
               uint8_t _SCLK = 13, uint8_t _MISO = 12);
 ```
 
@@ -36,11 +36,11 @@ When the begin method is called.  The parameters passed in for MISO/MOSI/SCK are
 for the SPI object.  If so SPI is used.  If not and the board type has SPI1, it will check to 
 see if those pins are valid for SPI1 and if so use SPI1, if not if there is an SPI2, it will check...
 ```
-  void begin(uint32_t spi_clock = ILI9341_SPICLOCK,
-             uint32_t spi_clock_read = ILI9341_SPICLOCK_READ);
+  void begin(uint32_t spi_clock = GC9A01A_SPICLOCK,
+             uint32_t spi_clock_read = GC9A01A_SPICLOCK_READ);
 ```
 
-In addition, On Teensy 3.x boards, this code allows the ILI9341 code to work with only 
+In addition, On Teensy 3.x boards, this code allows the GC9A01A code to work with only 
 one hardware CS pin available, which in this case must be used for the DC pin.  
 This is very useful to support SPI1 on the T3.5 and T3.6 boards which only
 have one CS pin unless you use some form of adapter to use the SPI pins that are on the SDCARD.   
@@ -137,41 +137,12 @@ to try to match which display library you are using.
 Discussion regarding this optimized version:
 ==========================
 
-http://forum.pjrc.com/threads/26305-Highly-optimized-ILI9341-%28320x240-TFT-color-display%29-library
-
-This version of the library supports the Adafruit displays that use the ILI9341 displays, but in
-addition are setup to support the displays that are sold by PJRC, which include:
-	http://pjrc.com/store/display_ili9341.html
-	http://pjrc.com/store/display_ili9341_touch.html
-
-Note: this library like the ILI9341_t3 library which it is derived from no longer  require any of the Adafruit libraries, such as their Adafruit_ILI9341 and Adafruit_GFX libraries APIS are based on.
+NA
 
 Adafruit library info
 =======================
 
-But as this code is based of of their work, their original information is included below:
-
-------------------------------------------
-
-This is a library for the Adafruit ILI9341 display products
-
-This library works with the Adafruit 2.8" Touch Shield V2 (SPI)
-  ----> http://www.adafruit.com/products/1651
- 
-Check out the links above for our tutorials and wiring diagrams.
-These displays use SPI to communicate, 4 or 5 pins are required
-to interface (RST is optional).
-
-Adafruit invests time and resources providing this open source code,
-please support Adafruit and open-source hardware by purchasing
-products from Adafruit!
-
-Written by Limor Fried/Ladyada for Adafruit Industries.
-MIT license, all text above must be included in any redistribution
-
-To download. click the DOWNLOADS button in the top right corner, rename the uncompressed folder Adafruit_ILI9341. Check that the Adafruit_ILI9341 folder contains Adafruit_ILI9341.cpp and Adafruit_ILI9341.
-
-Place the Adafruit_ILI9341 library folder your arduinosketchfolder/libraries/ folder. You may need to create the libraries subfolder if its your first library. Restart the IDE
+NA
 
 Also requires the Adafruit_GFX library for Arduino.
 
