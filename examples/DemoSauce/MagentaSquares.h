@@ -2,7 +2,7 @@
 #define MAGENTA_SQUARES_H__
 
 #include <Arduino.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 #include "MathUtil.h"
 #include "BaseAnimation.h"
 
@@ -20,10 +20,10 @@ class MagentaSquares : public BaseAnimation {
 public:
 	MagentaSquares() : BaseAnimation() {};
 
-	void init( ILI9341_t3n tft );
+	void init( GC9A01A_t3n tft );
 	uint_fast16_t bgColor( void );
 	String title();
-	void perFrame( ILI9341_t3n tft, FrameParams frameParams );
+	void perFrame( GC9A01A_t3n tft, FrameParams frameParams );
 
 private:
   inline float distance2D( float w, float h );
@@ -43,7 +43,7 @@ inline float MagentaSquares::distance2D( float w, float h ) {
   return sqrt( w*w + h*h );
 }
 
-void MagentaSquares::init( ILI9341_t3n tft ) {
+void MagentaSquares::init( GC9A01A_t3n tft ) {
   uint_fast16_t w = tft.width();
   uint_fast16_t h = tft.height();
 
@@ -75,7 +75,7 @@ String MagentaSquares::title() {
 	return "MagentaSquares";
 }
 
-void MagentaSquares::perFrame( ILI9341_t3n tft, FrameParams frameParams ) {
+void MagentaSquares::perFrame( GC9A01A_t3n tft, FrameParams frameParams ) {
   //uint_fast16_t w = tft.width();
   //uint_fast16_t h = tft.height();
 

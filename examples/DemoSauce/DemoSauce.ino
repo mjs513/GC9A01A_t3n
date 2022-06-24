@@ -16,7 +16,7 @@
 
 // https://github.com/zkarcher/demosauce
 #include <SPI.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 #include "font_Arial.h"
 
 #include "FrameParams.h"
@@ -61,7 +61,7 @@ const int_fast16_t DEFAULT_ANIM_TIME = 20.0f * 1000.0f;  // ms
 #define TOUCH_CS  6
 const uint8_t MIC_PIN = 14;
 const uint8_t BACKLIGHT_PIN = 29;
-ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
+GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
 
 FrameParams frameParams;
 long previousMillis = 0;
@@ -115,12 +115,12 @@ void setup() {
 
   tft.begin();
   tft.setRotation( 3 );
-  tft.fillScreen(ILI9341_BLACK);
+  tft.fillScreen(BLACK);
 
   // Serial
   if( DO_BENCHMARKS ) {
     Serial.begin( SERIAL_BAUD_RATE );
-    tft.setTextColor(ILI9341_YELLOW);
+    tft.setTextColor(YELLOW);
     tft.setFont(Arial_18);
     tft.setCursor(98, 42);
     tft.print("waiting for");
@@ -129,10 +129,10 @@ void setup() {
     tft.print("Arduino");
     tft.setCursor(60, 120);
     tft.print("Serial Monitor");
-    tft.setTextColor(ILI9341_GREEN);
+    tft.setTextColor(GREEN);
     tft.setFont(Arial_18);
     while (!Serial && millis() < 8000) { // wait for Arduino Serial Monitor
-      tft.fillRect(118, 182, 42, 18, ILI9341_BLACK);
+      tft.fillRect(118, 182, 42, 18, BLACK);
       tft.setCursor(118, 182);
       tft.print((8000.0 - (float)millis()) / 1000.0, 1);
       tft.print(" sec");

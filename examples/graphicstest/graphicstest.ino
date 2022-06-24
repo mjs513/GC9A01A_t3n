@@ -23,7 +23,6 @@
 #define TFT_SCK 13
 #define TFT_MISO 12
 #define TFT_MOSI 11
-#define TOUCH_CS  6
 
 GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST);
 #define DEBUG_PIN 0
@@ -45,25 +44,9 @@ void setup() {
   tft.setTextColor(YELLOW);
   tft.setTextSize(2);
   tft.println("Waiting for Arduino Serial Monitor...");
-/*
-  // read diagnostics (optional but can help debug problems)
-  digitalWrite(DEBUG_PIN, !digitalRead(DEBUG_PIN));
-  uint8_t x = tft.readcommand8(RDMODE);
-  Serial.print("Display Power Mode: 0x"); Serial.println(x, HEX);
-  digitalWrite(DEBUG_PIN, !digitalRead(DEBUG_PIN));
-  x = tft.readcommand8(RDMADCTL);
-  Serial.print("MADCTL Mode: 0x"); Serial.println(x, HEX);
-  digitalWrite(DEBUG_PIN, !digitalRead(DEBUG_PIN));
-  x = tft.readcommand8(RDPIXFMT);
-  Serial.print("Pixel Format: 0x"); Serial.println(x, HEX);
-  digitalWrite(DEBUG_PIN, !digitalRead(DEBUG_PIN));
-  x = tft.readcommand8(RDIMGFMT);
-  Serial.print("Image Format: 0x"); Serial.println(x, HEX);
-  digitalWrite(DEBUG_PIN, !digitalRead(DEBUG_PIN));
-  x = tft.readcommand8(RDSELFDIAG);
-  Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX);
+
   Serial.println(F("Benchmark                Time (microseconds)"));
-*/
+
   Serial.print(F("Screen fill              "));
   Serial.println(testFillScreen());
   delay(200);

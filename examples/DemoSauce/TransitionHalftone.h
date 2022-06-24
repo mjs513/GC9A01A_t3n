@@ -2,7 +2,7 @@
 #define TRANSITION_HALFTONE_H__
 
 #include <Arduino.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 #include "MathUtil.h"
 #include "BaseTransition.h"
 
@@ -17,9 +17,9 @@ class TransitionHalftone : public BaseTransition {
 public:
 	TransitionHalftone() : BaseTransition() {};
 
-  void init( ILI9341_t3n tft );
-	void restart( ILI9341_t3n tft, uint_fast16_t color );
-	void perFrame( ILI9341_t3n tft, FrameParams frameParams );
+  void init( GC9A01A_t3n tft );
+	void restart( GC9A01A_t3n tft, uint_fast16_t color );
+	void perFrame( GC9A01A_t3n tft, FrameParams frameParams );
   boolean isComplete();
 
 private:
@@ -28,11 +28,11 @@ private:
   boolean _isComplete = false;
 };
 
-void TransitionHalftone::init( ILI9341_t3n tft ) {
+void TransitionHalftone::init( GC9A01A_t3n tft ) {
 
 }
 
-void TransitionHalftone::restart( ILI9341_t3n tft, uint_fast16_t inColor ) {
+void TransitionHalftone::restart( GC9A01A_t3n tft, uint_fast16_t inColor ) {
   //uint_fast16_t w = tft.width();
   //uint_fast16_t h = tft.height();
 	_phase = 0;
@@ -40,7 +40,7 @@ void TransitionHalftone::restart( ILI9341_t3n tft, uint_fast16_t inColor ) {
   _isComplete = false;
 }
 
-void TransitionHalftone::perFrame( ILI9341_t3n tft, FrameParams frameParams ) {
+void TransitionHalftone::perFrame( GC9A01A_t3n tft, FrameParams frameParams ) {
   uint_fast16_t w = (uint_fast16_t)tft.width();
   uint_fast16_t h = (uint_fast16_t)tft.height();
 	uint_fast16_t w_2 = (w>>1);

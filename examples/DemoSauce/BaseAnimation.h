@@ -2,25 +2,25 @@
 #define BASE_ANIMATION_H__
 
 #include <Arduino.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 #include "MathUtil.h"
 
 class BaseAnimation {
 public:
 	BaseAnimation(){};
 
-	virtual void init( ILI9341_t3n tft );
+	virtual void init( GC9A01A_t3n tft );
 	virtual uint_fast16_t bgColor( void );
-	virtual void reset( ILI9341_t3n tft );
+	virtual void reset( GC9A01A_t3n tft );
 	virtual String title();
 
 	virtual boolean willForceTransition( void );
 	virtual boolean forceTransitionNow( void );
 
-	virtual void perFrame( ILI9341_t3n tft, FrameParams frameParams );
+	virtual void perFrame( GC9A01A_t3n tft, FrameParams frameParams );
 };
 
-void BaseAnimation::init( ILI9341_t3n tft ) {
+void BaseAnimation::init( GC9A01A_t3n tft ) {
 	// Extend me
 }
 
@@ -29,7 +29,7 @@ uint_fast16_t BaseAnimation::bgColor( void ) {
 	return 0xf81f;	// Everyone loves magenta
 }
 
-void BaseAnimation::reset( ILI9341_t3n tft ) {
+void BaseAnimation::reset( GC9A01A_t3n tft ) {
 	// Extend me
 }
 
@@ -46,7 +46,7 @@ boolean BaseAnimation::forceTransitionNow( void ) {
 	return false;	// Default: SuperTFT will transition animations automatically
 }
 
-void BaseAnimation::perFrame( ILI9341_t3n tft, FrameParams frameParams ) {
+void BaseAnimation::perFrame( GC9A01A_t3n tft, FrameParams frameParams ) {
 	// Extend me
 }
 

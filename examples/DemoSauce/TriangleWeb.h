@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <math.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 #include "BaseAnimation.h"
 
 
@@ -15,10 +15,10 @@ class TriangleWeb : public BaseAnimation {
 public:
 	TriangleWeb() : BaseAnimation() {};
 
-	void init( ILI9341_t3n tft );
+	void init( GC9A01A_t3n tft );
 	uint_fast16_t bgColor( void );
 	String title();
-	void perFrame( ILI9341_t3n tft, FrameParams frameParams );
+	void perFrame( GC9A01A_t3n tft, FrameParams frameParams );
 
 private:
   Point getWebPoint( uint_fast8_t i, uint_fast8_t j, float phase );
@@ -29,7 +29,7 @@ private:
   uint_fast16_t _bgColor;
 };
 
-void TriangleWeb::init( ILI9341_t3n tft ) {
+void TriangleWeb::init( GC9A01A_t3n tft ) {
   uint_fast16_t w = tft.width();
   uint_fast16_t h = tft.height();
   //tft.fillRect( 0, 0, w, h, 0x0 );
@@ -58,7 +58,7 @@ Point TriangleWeb::getWebPoint( uint_fast8_t i, uint_fast8_t j, float phase ) {
    };
 }
 
-void TriangleWeb::perFrame( ILI9341_t3n tft, FrameParams frameParams ) {
+void TriangleWeb::perFrame( GC9A01A_t3n tft, FrameParams frameParams ) {
   //uint_fast16_t w = tft.width();
   //uint_fast16_t h = tft.height();
 

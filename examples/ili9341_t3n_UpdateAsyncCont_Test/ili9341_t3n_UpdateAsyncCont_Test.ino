@@ -1,7 +1,7 @@
 #include <ILI9341_fonts.h>
-#include <ILI9341_t3n.h>
-#include <ili9341_t3n_font_Arial.h>
-#include <ili9341_t3n_font_ArialBold.h>
+#include <GC9A01A_t3n.h>
+#include <GC9A01A_t3n_font_Arial.h>
+#include <GC9A01A_t3n_font_ArialBold.h>
 
 elapsedMicros _dt;
 #define dtSTART {_dt=0;}
@@ -15,7 +15,7 @@ elapsedMicros _dt;
 
 
 //------------------------------------
-#define USE_SPI1
+//#define USE_SPI1
 #ifdef USE_SPI1
 #ifdef ARDUINO_TEENSY41
 #define TFT_RST 8
@@ -31,7 +31,6 @@ elapsedMicros _dt;
 #define TFT_MOSI 0
 #define TFT_MISO 1
 #define TFT_SCK 32
-
 #endif
 #elif defined(ARDUINO_TEENSY35) || defined(ARDUINO_TEENSY36)
 // currently my flexi...
@@ -50,11 +49,11 @@ elapsedMicros _dt;
 #define TFT_MISO 12
 #define TFT_SCK 13
 #endif
-ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
+GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
 
 uint16_t our_pallet[] = {
-  ILI9341_BLACK,  ILI9341_RED, ILI9341_GREEN,  ILI9341_BLUE,
-  ILI9341_YELLOW, ILI9341_ORANGE, ILI9341_CYAN, ILI9341_PINK
+  BLACK,  RED, GREEN,  BLUE,
+  YELLOW, ORANGE, CYAN, PINK
 };
 
 #define COUNT_SHUTDOWN_FRAMES 16
@@ -72,9 +71,9 @@ void setup() {
   tft.begin(26000000);
   tft.setRotation(ROTATION);
   tft.useFrameBuffer(true);
-  tft.fillScreen(ILI9341_BLACK);
-  tft.setCursor(ILI9341_t3n::CENTER, ILI9341_t3n::CENTER);
-  tft.setTextColor(ILI9341_RED);
+  tft.fillScreen(BLACK);
+  tft.setCursor(GC9A01A_t3n::CENTER, GC9A01A_t3n::CENTER);
+  tft.setTextColor(RED);
   tft.setFont(Arial_20_Bold);
   tft.println("*** Auto start ***");
   tft.updateScreen();
@@ -102,14 +101,14 @@ void frame_callback() {
   // See if end of test signalled.
   if (shutdown_cont_update_count == COUNT_SHUTDOWN_FRAMES) {
     uint8_t color_index = (frameCount >> 4) & 0x7;
-    tft.setCursor(ILI9341_t3n::CENTER, ILI9341_t3n::CENTER);
+    tft.setCursor(GC9A01A_t3n::CENTER, GC9A01A_t3n::CENTER);
     tft.setTextColor(our_pallet[(color_index + 3) & 7]);
     tft.setFont(Arial_20_Bold);
     tft.println("Stop Signalled");
     shutdown_cont_update_count--;
     arm_dcache_flush(tft_frame_buffer, FRAME_BUFFER_SIZE);
   } else if (shutdown_cont_update_count == 0) {
-    tft.setCursor(ILI9341_t3n::CENTER, tft.getCursorY());
+    tft.setCursor(GC9A01A_t3n::CENTER, tft.getCursorY());
     tft.println("endUpdateAsync");
     tft.endUpdateAsync();
     Serial.println("after endUpdateAsync");
@@ -188,7 +187,7 @@ void toggleOnOffDisplay() {
     shutdown_cont_update_count = COUNT_SHUTDOWN_FRAMES;
     while (shutdown_cont_update_count) ;
     tft.waitUpdateAsyncComplete();
-    tft.setCursor(ILI9341_t3n::CENTER, tft.getCursorY());
+    tft.setCursor(GC9A01A_t3n::CENTER, tft.getCursorY());
     tft.print("Finished Test\n");
     Serial.println("after waitUpdateAsyncComplete");
     Serial.println("Finished test");

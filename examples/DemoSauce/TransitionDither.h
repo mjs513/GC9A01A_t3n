@@ -2,7 +2,7 @@
 #define TRANSITION_DITHER_H__
 
 #include <Arduino.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 #include "MathUtil.h"
 #include "BaseTransition.h"
 
@@ -14,9 +14,9 @@ class TransitionDither : public BaseTransition {
 public:
 	TransitionDither() : BaseTransition() {};
 
-  void init( ILI9341_t3n tft );
-	void restart( ILI9341_t3n tft, uint_fast16_t color );
-	void perFrame( ILI9341_t3n tft, FrameParams frameParams );
+  void init( GC9A01A_t3n tft );
+	void restart( GC9A01A_t3n tft, uint_fast16_t color );
+	void perFrame( GC9A01A_t3n tft, FrameParams frameParams );
   boolean isComplete();
 
 private:
@@ -25,11 +25,11 @@ private:
 	uint_fast8_t _step;
 };
 
-void TransitionDither::init( ILI9341_t3n tft ) {
+void TransitionDither::init( GC9A01A_t3n tft ) {
 
 }
 
-void TransitionDither::restart( ILI9341_t3n tft, uint_fast16_t inColor ) {
+void TransitionDither::restart( GC9A01A_t3n tft, uint_fast16_t inColor ) {
   //uint_fast16_t w = tft.width();
   //uint_fast16_t h = tft.height();
 	_phase = 0;
@@ -37,7 +37,7 @@ void TransitionDither::restart( ILI9341_t3n tft, uint_fast16_t inColor ) {
 	_step = 0;
 }
 
-void TransitionDither::perFrame( ILI9341_t3n tft, FrameParams frameParams ) {
+void TransitionDither::perFrame( GC9A01A_t3n tft, FrameParams frameParams ) {
   uint_fast16_t w = (uint_fast16_t)tft.width();
   uint_fast16_t h = (uint_fast16_t)tft.height();
 

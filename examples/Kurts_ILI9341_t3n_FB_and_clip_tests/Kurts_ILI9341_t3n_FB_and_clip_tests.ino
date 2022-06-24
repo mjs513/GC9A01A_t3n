@@ -1,9 +1,12 @@
 #include <Adafruit_GFX.h>    // Core graphics library
-#include <ili9341_t3n_font_Arial.h>
-#include <ili9341_t3n_font_ArialBold.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n_font_Arial.h>
+#include <GC9A01A_t3n_font_ArialBold.h>
+#include <GC9A01A_t3n.h>
 #include <Fonts/FreeMonoBoldOblique12pt7b.h>
 #include <Fonts/FreeSerif12pt7b.h>
+
+#define TFTWIDTH 240
+#define TFTHEIGHT 240
 
 #define ROTATION 3
 
@@ -12,11 +15,11 @@
 #define TFT_DC  9  // only CS pin 
 #define TFT_CS 10  // using standard pin
 #define TFT_RST 8
-ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RST);
+GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST);
 #else
-//#define DEFAULT_PINS
+#define DEFAULT_PINS
 //#define USE_SPI1
-#define KURTS_FLEXI
+//#define KURTS_FLEXI
 //#define FRANKS_C64
 
 #ifdef KURTS_FLEXI
@@ -66,13 +69,13 @@ ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RST);
 #define TFT_MISO 12
 #define TFT_MOSI 11
 #endif
-ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
+GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
 #endif
 
 Adafruit_GFX_Button button;
 
 // Let's allocate the frame buffer ourself.
-DMAMEM uint16_t tft_frame_buffer[ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT];
+DMAMEM uint16_t tft_frame_buffer[TFTWIDTH * TFTHEIGHT];
 
 uint8_t use_dma = 0;
 uint8_t use_clip_rect = 0;
@@ -91,24 +94,13 @@ void setup() {
   tft.setFrameBuffer(tft_frame_buffer);
 
   tft.setRotation(ROTATION);
-  tft.fillScreen(ILI9341_BLACK);
+  tft.fillScreen(BLACK);
 
-  // read diagnostics (optional but can help debug problems)
-  uint8_t x = tft.readcommand8(ILI9341_RDMODE);
-  Serial.print("Display Power Mode: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDMADCTL);
-  Serial.print("MADCTL Mode: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDPIXFMT);
-  Serial.print("Pixel Format: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDIMGFMT);
-  Serial.print("Image Format: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDSELFDIAG);
-  Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX);
 #ifdef DEBUG_PIN
   pinMode(DEBUG_PIN, OUTPUT);
 #endif
 
-  button.initButton(&tft, 200, 125, 100, 40, ILI9341_GREEN, ILI9341_YELLOW, ILI9341_RED, "UP", 1, 1);
+  button.initButton(&tft, 200, 125, 100, 40, GREEN, YELLOW, RED, "UP", 1, 1);
 
   drawTestScreen();
 }
@@ -118,7 +110,7 @@ void SetupOrClearClipRectAndOffsets() {
     tft.setClipRect();  // make sure we clear the whole screen
     tft.setOrigin();    // make sure none are set yet
 
-    tft.fillScreen(ILI9341_LIGHTGREY);
+    tft.fillScreen(LIGHTGREY);
 
     // Now lets set origin.
     if (use_set_origin)
@@ -127,7 +119,7 @@ void SetupOrClearClipRectAndOffsets() {
     int y = tft.height() / 4;
     int w = tft.width() / 2;
     int h = tft.height() / 2;
-    tft.drawRect(x, y, w, h, ILI9341_ORANGE);
+    tft.drawRect(x, y, w, h, ORANGE);
     tft.updateScreen();
     tft.setClipRect(x + 1, y + 1, w - 2, h - 2);
     delay(250);
@@ -191,27 +183,27 @@ void drawTestScreen() {
   tft.useFrameBuffer(use_fb);
   SetupOrClearClipRectAndOffsets();
   uint32_t start_time = millis();
-  tft.fillScreen(use_fb ? ILI9341_RED : ILI9341_BLACK);
+  tft.fillScreen(use_fb ? RED : BLACK);
   //tft.setFont(Inconsolata_60);
   tft.setFont(Arial_24_Bold);
-  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextColor(WHITE);
   tft.setCursor(0, 0);
   tft.println("Test");
-  tft.setTextColor(ILI9341_WHITE, ILI9341_RED);
+  tft.setTextColor(WHITE, RED);
   tft.println("text");
   tft.setCursor(85, 65);
   tft.print("XYZ");
   tft.setFontAdafruit();
   tft.setTextSize(2);
-  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextColor(WHITE);
   tft.println("01234");
-  tft.setTextColor(ILI9341_WHITE, ILI9341_GREEN);
+  tft.setTextColor(WHITE, GREEN);
   tft.println("56789!@#$%");
 
-  tft.drawRect(0, 150, 100, 50, ILI9341_WHITE);
-  tft.drawLine(0, 150, 100, 50, ILI9341_GREEN);
-  tft.fillRectVGradient(125, 150, 50, 50, ILI9341_GREEN, ILI9341_YELLOW);
-  tft.fillRectHGradient(200, 150, 50, 50, ILI9341_YELLOW, ILI9341_GREEN);
+  tft.drawRect(0, 150, 100, 50, WHITE);
+  tft.drawLine(0, 150, 100, 50, GREEN);
+  tft.fillRectVGradient(125, 150, 50, 50, GREEN, YELLOW);
+  tft.fillRectHGradient(200, 150, 50, 50, YELLOW, GREEN);
   // Try a read rect and write rect
 #ifdef DEBUG_PIN
   digitalWrite(DEBUG_PIN, HIGH);
@@ -250,13 +242,13 @@ void drawTestScreen() {
     ppd16++;
   }
   tft.writeRect8BPP(200, 50, 50, 50, (uint8_t*)pixel_data, palette);
-  palette[0] = ILI9341_CYAN; 
-  palette[1] = ILI9341_OLIVE; 
+  palette[0] = CYAN; 
+  palette[1] = OLIVE; 
   tft.writeRect1BPP(75, 100, 16, 16, pict1bpp, palette);
   tft.writeRect1BPP(320 - 90, 75, 16, 16, pict1bpp, palette);
   
-  palette[2] = ILI9341_MAROON; 
-  palette[3] = ILI9341_PINK; 
+  palette[2] = MAROON; 
+  palette[3] = PINK; 
   tft.writeRect2BPP(75, 125, 32, 16, pict2bpp, palette);
 
   tft.writeRectNBPP(15, 125, 32, 16, 2, pict2bpp, palette);
@@ -288,13 +280,13 @@ void fillScreenTest() {
   tft.useFrameBuffer(0);
   SetupOrClearClipRectAndOffsets();
 
-  tft.fillScreen(ILI9341_RED);
+  tft.fillScreen(RED);
   WaitForUserInput();
-  tft.fillScreen(ILI9341_GREEN);
+  tft.fillScreen(GREEN);
   WaitForUserInput();
-  tft.fillScreen(ILI9341_WHITE);
+  tft.fillScreen(WHITE);
   WaitForUserInput();
-  tft.fillScreen(ILI9341_BLACK);
+  tft.fillScreen(BLACK);
 
 }
 void printTextSizes(const char *sz) {
@@ -303,7 +295,7 @@ void printTextSizes(const char *sz) {
   uint16_t w, h;
   tft.getTextBounds(sz, tft.getCursorX(), tft.getCursorY(), &x, &y, &w, &h);
   Serial.printf(" Rect(%d, %d, %u %u)\n", x, y, w, h);  
-  tft.drawRect(x, y, w, h, ILI9341_GREEN);
+  tft.drawRect(x, y, w, h, GREEN);
 }
 
 
@@ -312,13 +304,13 @@ void drawTextScreen(bool fOpaque) {
   tft.setTextSize(1);
   uint32_t start_time = millis();
   tft.useFrameBuffer(use_fb);
-  tft.fillScreen(use_fb ? ILI9341_RED : ILI9341_BLACK);
+  tft.fillScreen(use_fb ? RED : BLACK);
   tft.setFont(Arial_28_Bold);
 //t  tft.setFont(Arial_40_Bold);
   if (fOpaque)
-    tft.setTextColor(ILI9341_WHITE, use_fb ? ILI9341_BLACK : ILI9341_RED);
+    tft.setTextColor(WHITE, use_fb ? BLACK : RED);
   else
-    tft.setTextColor(ILI9341_WHITE);
+    tft.setTextColor(WHITE);
   tft.setCursor(0, 5);
   tft.println("AbCdEfGhIj");
 #if 0
@@ -334,35 +326,35 @@ void drawTextScreen(bool fOpaque) {
   tft.setFont(&FreeMonoBoldOblique12pt7b);
   printTextSizes("AdaFruit_MB_12");
   if (fOpaque){
-    tft.setTextColor(ILI9341_RED, ILI9341_BLUE);
+    tft.setTextColor(RED, BLUE);
     tft.print("A");
-    tft.setTextColor(ILI9341_WHITE, ILI9341_GREEN);
+    tft.setTextColor(WHITE, GREEN);
     tft.print("d");
-    tft.setTextColor(ILI9341_RED, ILI9341_BLUE);
+    tft.setTextColor(RED, BLUE);
     tft.print("a");
-    tft.setTextColor(ILI9341_WHITE, ILI9341_GREEN);
+    tft.setTextColor(WHITE, GREEN);
     tft.print("F");
-    tft.setTextColor(ILI9341_RED, ILI9341_BLUE);
+    tft.setTextColor(RED, BLUE);
     tft.print("R");
-    tft.setTextColor(ILI9341_WHITE, ILI9341_GREEN);
+    tft.setTextColor(WHITE, GREEN);
     tft.print("u");
-    tft.setTextColor(ILI9341_RED, ILI9341_BLUE);
+    tft.setTextColor(RED, BLUE);
     tft.print("i");
-    tft.setTextColor(ILI9341_WHITE, ILI9341_GREEN);
+    tft.setTextColor(WHITE, GREEN);
     tft.print("t");
-    tft.setTextColor(ILI9341_RED, ILI9341_BLUE);
+    tft.setTextColor(RED, BLUE);
     tft.print("_");
-    tft.setTextColor(ILI9341_WHITE, ILI9341_GREEN);
+    tft.setTextColor(WHITE, GREEN);
     tft.print("M");
-    tft.setTextColor(ILI9341_RED, ILI9341_BLUE);
+    tft.setTextColor(RED, BLUE);
     tft.print("B");
-    tft.setTextColor(ILI9341_WHITE, ILI9341_GREEN);
+    tft.setTextColor(WHITE, GREEN);
     tft.print("_");
-    tft.setTextColor(ILI9341_RED, ILI9341_BLUE);
+    tft.setTextColor(RED, BLUE);
     tft.print("1");
-    tft.setTextColor(ILI9341_WHITE, ILI9341_GREEN);
+    tft.setTextColor(WHITE, GREEN);
     tft.println("2");
-    tft.setTextColor(ILI9341_WHITE, use_fb ? ILI9341_BLACK : ILI9341_RED);
+    tft.setTextColor(WHITE, use_fb ? BLACK : RED);
   }
   else tft.println("AdaFruit_MB_12");
   tft.setFont(&FreeSerif12pt7b);
@@ -393,12 +385,12 @@ void drawGFXTextScreen(bool fOpaque) {
   tft.setTextSize(1);
   tft.setCursor(0, 10);
   if (fOpaque)
-    tft.setTextColor(ILI9341_WHITE, use_fb ? ILI9341_BLACK : ILI9341_RED);
+    tft.setTextColor(WHITE, use_fb ? BLACK : RED);
   else
-    tft.setTextColor(ILI9341_WHITE);
+    tft.setTextColor(WHITE);
   uint32_t start_time = millis();
   tft.useFrameBuffer(use_fb);
-  tft.fillScreen(use_fb ? ILI9341_RED : ILI9341_BLACK);
+  tft.fillScreen(use_fb ? RED : BLACK);
   tft.setFont(&FreeMonoBoldOblique12pt7b);
   tft.println("MonoBold");
   tft.println("ABCDEFGHIJKLMNO");
@@ -448,21 +440,21 @@ void testDMAContUpdate(bool fCont) {
   use_fb = 1; //
 
   tft.useFrameBuffer(use_fb);
-  tft.fillScreen(ILI9341_GREEN);
+  tft.fillScreen(GREEN);
 
   // check to see if screen memory actually turned green.
   if (use_fb) {
     uint16_t *pw = tft.getFrameBuffer();
     int error_count = 0;
-    for (int i = 0; i < (ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT); i++)
+    for (int i = 0; i < (TFTWIDTH * TFTHEIGHT); i++)
     {
-      if (*pw != ILI9341_GREEN) {
-        Serial.printf("tft.fillScreen(ILI9341_GREEN) not green? %d != %x\n", i, *pw);
+      if (*pw != GREEN) {
+        Serial.printf("tft.fillScreen(GREEN) not green? %d != %x\n", i, *pw);
         error_count++;
       }
       pw++;
     }
-    Serial.printf("tft.fillScreen(ILI9341_GREEN(%x)) error count = %d\n", ILI9341_GREEN, error_count);
+    Serial.printf("tft.fillScreen(GREEN(%x)) error count = %d\n", GREEN, error_count);
   }
 
   if (fCont)
@@ -471,39 +463,39 @@ void testDMAContUpdate(bool fCont) {
   // Start the update
   WaitForFrame(fCont, 10);
 
-  tft.fillScreen(ILI9341_YELLOW);
-  tft.drawRect(5, 5, 310, 230, ILI9341_GREEN);
-  tft.fillRect(140, 100, 40, 40, ILI9341_BLUE);
+  tft.fillScreen(YELLOW);
+  tft.drawRect(5, 5, 310, 230, GREEN);
+  tft.fillRect(140, 100, 40, 40, BLUE);
   WaitForFrame(fCont, 20);
 
-  tft.fillScreen(ILI9341_RED);
-  tft.drawRect(5, 5, 310, 230, ILI9341_WHITE);
+  tft.fillScreen(RED);
+  tft.drawRect(5, 5, 310, 230, WHITE);
 
   WaitForFrame(fCont, 30);
 
-  tft.fillScreen(ILI9341_BLACK);
+  tft.fillScreen(BLACK);
 
-  tft.drawRect(5, 5, 310, 230, ILI9341_GREEN);
-  tft.drawRect(25, 25, 270, 190, ILI9341_RED);
+  tft.drawRect(5, 5, 310, 230, GREEN);
+  tft.drawRect(25, 25, 270, 190, RED);
   WaitForFrame(fCont, 40);
 
   digitalWrite(0, HIGH);
-  tft.drawRect(5, 5, 310, 230, ILI9341_GREEN);
+  tft.drawRect(5, 5, 310, 230, GREEN);
   tft.setCursor(10, 100);
-  tft.setTextColor(ILI9341_RED, ILI9341_BLACK);
+  tft.setTextColor(RED, BLACK);
   tft.setFont(Arial_20_Bold);
   tft.println("DONE");
   tft.setFont();
   tft.setCursor(10, 200);
-  tft.setTextColor(ILI9341_GREEN);
+  tft.setTextColor(GREEN);
   tft.print("Done");
   tft.setTextSize(2);
   tft.setCursor(10, 50);
-  tft.setTextColor(ILI9341_WHITE, ILI9341_RED);
+  tft.setTextColor(WHITE, RED);
   tft.print("Done");
   digitalWrite(0, LOW);
   WaitForFrame(fCont, 45);
-  tft.fillRect(0, 0, 2, 2, ILI9341_PURPLE);
+  tft.fillRect(0, 0, 2, 2, PURPLE);
 
   if (!fCont) {
     Serial.println("Lets now try doing Continue for a few iterations to see if it changes");

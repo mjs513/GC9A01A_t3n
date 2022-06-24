@@ -2,7 +2,7 @@
 #define CUBE_3D_H__
 
 #include <Arduino.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 #include "MathUtil.h"
 #include "BaseAnimation.h"
 
@@ -14,10 +14,10 @@ class Cube3D : public BaseAnimation {
 public:
 	Cube3D() : BaseAnimation() {};
 
-	void init( ILI9341_t3n tft );
+	void init( GC9A01A_t3n tft );
 	uint_fast16_t bgColor( void );
 	String title();
-	void perFrame( ILI9341_t3n tft, FrameParams frameParams );
+	void perFrame( GC9A01A_t3n tft, FrameParams frameParams );
 
 private:
   float _phase = 0;
@@ -25,7 +25,7 @@ private:
   uint_fast16_t _bgColor;
 };
 
-void Cube3D::init( ILI9341_t3n tft ) {
+void Cube3D::init( GC9A01A_t3n tft ) {
   _bgColor = tft.color565( 0, 0, 0 );
 }
 
@@ -37,7 +37,7 @@ String Cube3D::title() {
 	return "Cube3D";
 }
 
-void Cube3D::perFrame( ILI9341_t3n tft, FrameParams frameParams ) {
+void Cube3D::perFrame( GC9A01A_t3n tft, FrameParams frameParams ) {
   uint_fast16_t w = (uint_fast16_t)tft.width();
   uint_fast16_t h = (uint_fast16_t)tft.height();
 

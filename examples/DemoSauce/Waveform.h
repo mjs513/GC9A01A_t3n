@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <math.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 #include "BaseAnimation.h"
 
 
@@ -11,10 +11,10 @@ class Waveform : public BaseAnimation {
 public:
 	Waveform() : BaseAnimation() {};
 
-	void init( ILI9341_t3n tft );
+	void init( GC9A01A_t3n tft );
 	uint_fast16_t bgColor( void );
 	String title();
-	void perFrame( ILI9341_t3n tft, FrameParams frameParams );
+	void perFrame( GC9A01A_t3n tft, FrameParams frameParams );
 
 private:
   uint_fast16_t _step = 0;
@@ -22,7 +22,7 @@ private:
   uint_fast16_t _bgColor;
 };
 
-void Waveform::init( ILI9341_t3n tft ) {
+void Waveform::init( GC9A01A_t3n tft ) {
   _bgColor = tft.color565( 0, 0, 0x55 );
 }
 
@@ -34,7 +34,7 @@ String Waveform::title() {
 	return "Waveform";
 }
 
-void Waveform::perFrame( ILI9341_t3n tft, FrameParams frameParams ) {
+void Waveform::perFrame( GC9A01A_t3n tft, FrameParams frameParams ) {
   uint_fast16_t w = tft.width();
   uint_fast16_t h = tft.height();
 

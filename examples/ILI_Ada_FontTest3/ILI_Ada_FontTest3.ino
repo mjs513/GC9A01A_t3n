@@ -1,7 +1,7 @@
 #include <Adafruit_GFX.h>
 
 #include <SPI.h>
-#include <ILI9341_t3n.h>
+#include <GC9A01A_t3n.h>
 
 #include "font_Arial.h"
 #include "font_ArialBold.h"
@@ -12,10 +12,10 @@
 #include "font_Crystal.h"
 #include "font_ChanceryItalic.h"
 
-#define ILI9341_CS 10
-#define ILI9341_DC 9
-#define ILI9341_RST 8
-ILI9341_t3n tft = ILI9341_t3n(ILI9341_CS, ILI9341_DC, ILI9341_RST);
+#define CS 10
+#define DC 9
+#define RST 8
+GC9A01A_t3n tft = GC9A01A_t3n(CS, DC, RST);
 uint8_t test_screen_rotation = 0;
 
 
@@ -27,49 +27,49 @@ void setup() {
   tft.begin();
 
   tft.setRotation(4);
-  tft.fillWindow(ILI9341_BLACK);
+  tft.fillWindow(BLACK);
 
-  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextColor(WHITE);
   tft.setFont(Arial_14);
   tft.println("Arial_14");
   displayStuff();
 
-  tft.setTextColor(ILI9341_YELLOW);
+  tft.setTextColor(YELLOW);
   tft.setFont(Arial_14_Bold);
   tft.println("ArialBold 14");
   displayStuff();
 
-  tft.setTextColor(ILI9341_GREEN);
+  tft.setTextColor(GREEN);
   tft.setFont(ComicSansMS_14);
   tft.println("ComicSansMS 14");
   displayStuff(); 
 
   nextPage();
   
-  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextColor(WHITE);
   tft.setFont(DroidSans_14);
   tft.println("DroidSans_14");
   displayStuff();
 
-  tft.setTextColor(ILI9341_YELLOW);
+  tft.setTextColor(YELLOW);
   tft.setFont(Michroma_14);
   tft.println("Michroma_14");
   displayStuff();
 
-  tft.setTextColor(ILI9341_BLACK, ILI9341_YELLOW);
+  tft.setTextColor(BLACK, YELLOW);
   tft.setFont(Crystal_24_Italic);
   tft.println("CRYSTAL_24");
   displayStuff();
 
   nextPage();
 
-  tft.setTextColor(ILI9341_GREEN);
+  tft.setTextColor(GREEN);
   tft.setFont(Chancery_24_Italic);
   tft.println("Chancery_24_Italic");
   displayStuff();
 
   //anti-alias font OpenSans
-  tft.setTextColor(ILI9341_RED, ILI9341_YELLOW);
+  tft.setTextColor(RED, YELLOW);
   tft.setFont(OpenSans24);
   tft.println("OpenSans 18");
   displayStuff(); 
@@ -86,43 +86,43 @@ void loop()
   
   nextPage();
 
-  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextColor(WHITE);
   tft.setFont(Arial_14);
   tft.println("Arial_14");
   displayStuff1();
 
-  tft.setTextColor(ILI9341_YELLOW);
+  tft.setTextColor(YELLOW);
   tft.setFont(Arial_14_Bold);
   tft.println("ArialBold 14");
   displayStuff1();
 
   nextPage();
 
-  tft.setTextColor(ILI9341_GREEN);
+  tft.setTextColor(GREEN);
   tft.setFont(ComicSansMS_14);
   tft.println("ComicSansMS 14");
   displayStuff1(); 
 
-  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextColor(WHITE);
   tft.setFont(DroidSans_14);
   tft.println("DroidSans_14");
   displayStuff1();
 
   nextPage();
 
-  tft.setTextColor(ILI9341_YELLOW);
+  tft.setTextColor(YELLOW);
   tft.setFont(Michroma_14);
   tft.println("Michroma_14");
   displayStuff1();
 
   nextPage();
   
-  tft.setTextColor(ILI9341_BLACK, ILI9341_YELLOW);
+  tft.setTextColor(BLACK, YELLOW);
   tft.setFont(Crystal_24_Italic);
   tft.println("CRYSTAL_24");
   displayStuff1();
 
-  tft.setTextColor(ILI9341_GREEN);
+  tft.setTextColor(GREEN);
   tft.setFont(Chancery_24_Italic);
   tft.println("Chancery_24_Italic");
   displayStuff1();
@@ -130,7 +130,7 @@ void loop()
   nextPage();
 
   //anti-alias font OpenSans
-  tft.setTextColor(ILI9341_RED, ILI9341_YELLOW);
+  tft.setTextColor(RED, YELLOW);
   tft.setFont(OpenSans24);
   tft.println("OpenSans 18");
   displayStuff1(); 
@@ -159,8 +159,8 @@ uint32_t displayStuff1()
   static const char alternating_text[] = "AbCdEfGhIjKlMnOpQrStUvWxYz\raBcDeFgHiJkLmNoPqRsTuVwXyZ";
  
   for (uint8_t i = 0; i < sizeof(alternating_text); i++) {
-    if (i & 1) tft.setTextColor(ILI9341_WHITE, ILI9341_RED);
-    else tft.setTextColor(ILI9341_YELLOW, ILI9341_BLUE);
+    if (i & 1) tft.setTextColor(WHITE, RED);
+    else tft.setTextColor(YELLOW, BLUE);
     tft.write(alternating_text[i]);
   }
   tft.println(); tft.println();
@@ -173,6 +173,6 @@ void nextPage()
   while (Serial.read() == -1) ;
   while (Serial.read() != -1) ;
 
-  tft.fillWindow(ILI9341_BLACK);
+  tft.fillWindow(BLACK);
   tft.setCursor(0, 0);
 }

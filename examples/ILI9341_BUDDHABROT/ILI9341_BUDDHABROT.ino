@@ -23,15 +23,15 @@ www.jeffreythompson.org
 // Modified to run on Teensy
 // MJS     March, 2019
 
-#include <ILI9341_t3n.h> // Hardware-specific library
+#include <GC9A01A_t3n.h> // Hardware-specific library
 #include <SD.h>
 #include <SPI.h>
-#include <ili9341_t3n_font_Arial.h>
+#include <GC9A01A_t3n_font_Arial.h>
 
-#define ILI9341_RST 23 //23 for t4
-#define ILI9341_DC 9
-#define ILI9341_CS 10
-ILI9341_t3n tft = ILI9341_t3n(ILI9341_CS, ILI9341_DC, ILI9341_RST);
+#define RST 23 //23 for t4
+#define DC 9
+#define CS 10
+GC9A01A_t3n tft = GC9A01A_t3n(CS, DC, RST);
 
 
 const int dim = 240;             // screen dimensions (square window)
@@ -41,7 +41,7 @@ int plots = 10000;        // number of plots to execute per frame (x30 = plots p
 // 2D array to hold exposure values
 byte exposure[dim*dim];
 int maxexposure;           // maximum exposure value
-int time = 0;
+int timeFrame = 0;
 int exposures = 0;
 
 boolean drawing;
@@ -67,8 +67,8 @@ void setup() {
   tft.begin();
   tft.setRotation(3);
   tft.setFont(Arial_9);
-  tft.fillScreen(ILI9341_BLACK);
-  tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+  tft.fillScreen(BLACK);
+  tft.setTextColor(WHITE, BLACK);
   tft.setTextDatum(TL_DATUM);
 
   if ( ARM_DWT_CYCCNT == ARM_DWT_CYCCNT ) {
@@ -92,8 +92,8 @@ uint32_t CCdiff;
 void loop() {
   plotPlots();
   static int Dexposures = 0;
-  time++;
-  if (time % 30 == 0) {
+  timeFrame++;
+  if (timeFrame % 30 == 0) {
     // show progress every 2 seconds or so...
     CCdiff = ARM_DWT_CYCCNT;
     findMaxExposure();
@@ -206,7 +206,7 @@ void saveBMP(){
     name[5] = (i/100)%10 + '0';     // hundreds
     name[6] = (i/10)%10 + '0';      // tens
     name[7] = i%10 + '0';           // ones
-    file = SD.open(name, O_CREAT | O_EXCL | O_WRITE);
+    file = SD.open(name, FILE_WRITE);
     if (file) {
       break;
     }
