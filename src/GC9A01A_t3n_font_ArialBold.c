@@ -1,4 +1,4 @@
-#include "ili9341_t3n_font_ArialBold.h"
+#include "GC9A01A_t3n_font_ArialBold.h"
 
 static const unsigned char Arial_8_Bold_data[] = {
 0x00,0x00,0x18,0x05,0x00,0x1D,0xE2,0x30,0x0A,0x62,
