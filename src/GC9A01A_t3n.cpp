@@ -71,8 +71,8 @@
 
 #if defined(__MK66FX1M0__)
 // T3.6 use Scatter/gather with chain to do transfer
-DMASetting GC9A01A_t3n::_dmasettings[4];
-DMAChannel GC9A01A_t3n::_dmatx;
+DMASetting GC9A01A_t3n::_dmasettings[3][3];
+//DMAChannel GC9A01A_t3n::_dmatx;
 #elif defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
 // DMASetting 	GC9A01A_t3n::_dmasettings[4];
 // DMAChannel 	GC9A01A_t3n::_dmatx;
@@ -86,10 +86,12 @@ uint16_t GC9A01A_t3n::_dma_write_size_words;
 volatile short _dma_dummy_rx;
 #endif
 
-#if defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
 GC9A01A_t3n *GC9A01A_t3n::_dmaActiveDisplay[3] = {0, 0, 0};
-#else
-GC9A01A_t3n *GC9A01A_t3n::_dmaActiveDisplay = 0;
+
+#if defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
+// On T4 Setup the buffers to be used one per SPI buss... 
+// This way we make sure it is hopefully in uncached memory
+GC9A01A_DMA_Data_t GC9A01A_t3n::_dma_data[3];   // one structure for each SPI buss... 
 #endif
 
 // volatile uint8_t  	GC9A01A_t3n::_dma_state = 0;  // Use pointer to this
@@ -97,7 +99,6 @@ GC9A01A_t3n *GC9A01A_t3n::_dmaActiveDisplay = 0;
 // volatile uint32_t	GC9A01A_t3n::_dma_frame_count = 0;	// Can return a
 // frame count...
 
-#if defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
 void GC9A01A_t3n::dmaInterrupt(void) {
   if (_dmaActiveDisplay[0]) {
     _dmaActiveDisplay[0]->process_dma_interrupt();
@@ -114,13 +115,6 @@ void GC9A01A_t3n::dmaInterrupt2(void) {
   }
 }
 
-#else
-void GC9A01A_t3n::dmaInterrupt(void) {
-  if (_dmaActiveDisplay) {
-    _dmaActiveDisplay->process_dma_interrupt();
-  }
-}
-#endif
 
 #ifdef DEBUG_ASYNC_UPDATE
 extern void dumpDMA_TCD(DMABaseClass *dmabc, const char *psx_title);
@@ -138,13 +132,13 @@ void GC9A01A_t3n::process_dma_interrupt(void) {
   if (print_count < 10) {
     print_count++;
     Serial.printf("TCD: %x D1:%x %x%c\n", (uint32_t)_dmatx.TCD->SADDR,
-                  (uint32_t)_dmasettings[1].TCD->SADDR,
+                  (uint32_t)_dmasettings[_spi_num][1].TCD->SADDR,
                   (uint32_t)_dmatx.TCD->DLASTSGA,
                   (_dmatx.TCD->SADDR > _dmasettings[1].TCD->SADDR) ? '>' : '<');
   }
 #endif
   if (_frame_callback_on_HalfDone &&
-      (_dmatx.TCD->SADDR > _dmasettings[1].TCD->SADDR)) {
+      (_dmatx.TCD->SADDR > _dmasettings[_spi_num][1].TCD->SADDR)) {
     _dma_sub_frame_count = 1; // set as partial frame.
   } else {
     _dma_frame_count++;
@@ -157,7 +151,7 @@ void GC9A01A_t3n::process_dma_interrupt(void) {
       writecommand_last(GC9A01A_NOP);
       endSPITransaction();
       _dma_state &= ~GC9A01A_DMA_ACTIVE;
-      _dmaActiveDisplay = 0; // We don't have a display active any more...
+      _dmaActiveDisplay[_spi_num] = 0; // We don't have a display active any more...
     }
     _dma_sub_frame_count = 0; // set as partial frame.
   }
@@ -170,15 +164,15 @@ void GC9A01A_t3n::process_dma_interrupt(void) {
   static uint8_t print_count;
   if (print_count < 10) {
     print_count++;
-    Serial.printf("TCD: %x D1:%x %x%c\n", (uint32_t)_dmatx.TCD->SADDR,
-                  (uint32_t)_dmasettings[1].TCD->SADDR,
-                  (uint32_t)_dmatx.TCD->DLASTSGA,
-                  (_dmatx.TCD->SADDR > _dmasettings[1].TCD->SADDR) ? '>' : '<');
+    Serial.printf("TCD: %x D1:%x %x%c\n", (uint32_t)_dma_data[_spi_num]._dmatx.TCD->SADDR,
+                  (uint32_t)_dma_data[_spi_num]._dmasettings[1].TCD->SADDR,
+                  (uint32_t)_dma_data[_spi_num]._dmatx.TCD->DLASTSGA,
+                  (_dma_data[_spi_num]._dmatx.TCD->SADDR > _dma_data[_spi_num]._dmasettings[1].TCD->SADDR) ? '>' : '<');
   }
 #endif
-  _dmatx.clearInterrupt();
+  _dma_data[_spi_num]._dmatx.clearInterrupt();
   if (_frame_callback_on_HalfDone &&
-      (_dmatx.TCD->SADDR > _dmasettings[1].TCD->SADDR)) {
+      (_dma_data[_spi_num]._dmatx.TCD->SADDR > _dma_data[_spi_num]._dmasettings[1].TCD->SADDR)) {
     _dma_sub_frame_count = 1; // set as partial frame.
     if (_frame_complete_callback)
       (*_frame_complete_callback)();
@@ -205,7 +199,7 @@ void GC9A01A_t3n::process_dma_interrupt(void) {
       while (_pimxrt_spi->SR & LPSPI_SR_MBF)
         ; // wait until this one is complete
 
-      _dmatx.clearComplete();
+      _dma_data[_spi_num]._dmatx.clearComplete();
       // Serial.println("Restore FCR");
       _pimxrt_spi->FCR = LPSPI_FCR_TXWATER(
           15);              // _spi_fcr_save;	// restore the FSR status...
@@ -223,8 +217,7 @@ void GC9A01A_t3n::process_dma_interrupt(void) {
       writecommand_last(GC9A01A_NOP);
       endSPITransaction();
       _dma_state &= ~GC9A01A_DMA_ACTIVE;
-      _dmaActiveDisplay[_spi_num] =
-          0; // We don't have a display active any more...
+      _dmaActiveDisplay[_spi_num] = 0; // We don't have a display active any more...
     } else {
       // Lets try to flush out memory
       if (_frame_complete_callback)
@@ -261,7 +254,7 @@ void GC9A01A_t3n::process_dma_interrupt(void) {
     writecommand_last(GC9A01A_NOP);
     endSPITransaction();
     _dma_state &= ~GC9A01A_DMA_ACTIVE;
-    _dmaActiveDisplay = 0; // We don't have a display active any more...
+    _dmaActiveDisplay[_spi_num]  = 0; // We don't have a display active any more...
     _dma_sub_frame_count = 0;
     if (_frame_complete_callback)
       (*_frame_complete_callback)();
@@ -318,13 +311,12 @@ void GC9A01A_t3n::process_dma_interrupt(void) {
 // use SPI pins
 // specific to each board type (e.g. 11,13 for Uno, 51,52 for Mega, etc.)
 GC9A01A_t3n::GC9A01A_t3n(uint8_t cs, uint8_t dc, uint8_t rst, uint8_t mosi,
-                         uint8_t sclk, uint8_t miso) {
+                         uint8_t sclk) {
   _cs = cs;
   _dc = dc;
   _rst = rst;
   _mosi = mosi;
   _sclk = sclk;
-  _miso = miso;
   _width = WIDTH;
   _height = HEIGHT;
 
@@ -506,7 +498,7 @@ void dumpDMA_TCD(DMABaseClass *dmabc, const char *psz_title) {
 //==============================================
 #ifdef ENABLE_GC9A01A_FRAMEBUFFER
 void GC9A01A_t3n::initDMASettings(void) {
-  // Serial.printf("initDMASettings called %d\n", _dma_state);
+  //Serial.printf("initDMASettings called %d\n", _dma_state);
   if (_dma_state & GC9A01A_DMA_INIT) { // should test for init, but...
     return;                            // we already init this.
   }
@@ -522,105 +514,77 @@ void GC9A01A_t3n::initDMASettings(void) {
   // Serial.printf("CWW: %d %d %d\n", CBALLOC, SCREEN_DMA_NUM_SETTINGS,
   // count_words_write);
   // Now lets setup DMA access to this memory...
-  _dmasettings[0].sourceBuffer(&_pfbtft[1], (COUNT_WORDS_WRITE - 1) * 2);
-  _dmasettings[0].destination(_pkinetisk_spi->PUSHR);
+  _dmasettings[_spi_num][0].sourceBuffer(&_pfbtft[1], (COUNT_WORDS_WRITE-1)*2);
+  _dmasettings[_spi_num][0].destination(_pkinetisk_spi->PUSHR);
 
   // Hack to reset the destination to only output 2 bytes.
-  _dmasettings[0].TCD->ATTR_DST = 1;
-  _dmasettings[0].replaceSettingsOnCompletion(_dmasettings[1]);
+  _dmasettings[_spi_num][0].TCD->ATTR_DST = 1;
+  _dmasettings[_spi_num][0].replaceSettingsOnCompletion(_dmasettings[_spi_num][1]);
 
-  _dmasettings[1].sourceBuffer(&_pfbtft[COUNT_WORDS_WRITE],
-                               COUNT_WORDS_WRITE * 2);
-  _dmasettings[1].destination(_pkinetisk_spi->PUSHR);
-  _dmasettings[1].TCD->ATTR_DST = 1;
-  _dmasettings[1].replaceSettingsOnCompletion(_dmasettings[2]);
+  _dmasettings[_spi_num][1].sourceBuffer(&_pfbtft[COUNT_WORDS_WRITE], COUNT_WORDS_WRITE*2);
+  _dmasettings[_spi_num][1].destination(_pkinetisk_spi->PUSHR);
+  _dmasettings[_spi_num][1].TCD->ATTR_DST = 1;
+  _dmasettings[_spi_num][1].replaceSettingsOnCompletion(_dmasettings[_spi_num][2]);
+
   if (_frame_callback_on_HalfDone)
-    _dmasettings[1].interruptAtHalf();
+    _dmasettings[_spi_num][0].interruptAtCompletion();
   else
-    _dmasettings[1].TCD->CSR &= ~DMA_TCD_CSR_INTHALF;
+    _dmasettings[_spi_num][0].TCD->CSR &= ~(DMA_TCD_CSR_DREQ);
+  // Sort of hack - but wrap around to output the first word again. 
+  _dmasettings[_spi_num][2].sourceBuffer(_pfbtft, 2);
+  _dmasettings[_spi_num][2].destination(_pkinetisk_spi->PUSHR);
+  _dmasettings[_spi_num][2].TCD->ATTR_DST = 1;
+  _dmasettings[_spi_num][2].replaceSettingsOnCompletion(_dmasettings[_spi_num][0]);
 
-  _dmasettings[2].sourceBuffer(&_pfbtft[COUNT_WORDS_WRITE * 2],
-                               COUNT_WORDS_WRITE * 2);
-  _dmasettings[2].destination(_pkinetisk_spi->PUSHR);
-  _dmasettings[2].TCD->ATTR_DST = 1;
-  _dmasettings[2].replaceSettingsOnCompletion(_dmasettings[3]);
-
-  // Sort of hack - but wrap around to output the first word again.
-  // This version wraps again but instead outputs whole first group, bypass 0...
-  _dmasettings[2].interruptAtCompletion(); // 2 is end of frame
-
-  _dmasettings[3].sourceBuffer(_pfbtft, COUNT_WORDS_WRITE * 2);
-  _dmasettings[3].destination(_pkinetisk_spi->PUSHR);
-  _dmasettings[3].TCD->ATTR_DST = 1;
-  _dmasettings[3].replaceSettingsOnCompletion(_dmasettings[1]);
 
   // Setup DMA main object
   // Serial.println("Setup _dmatx");
   _dmatx.begin(true);
   _dmatx.triggerAtHardwareEvent(dmaTXevent);
-  _dmatx = _dmasettings[0];
-  _dmatx.attachInterrupt(dmaInterrupt);
+  _dmatx = _dmasettings[_spi_num][0];
+  if (_spi_num == 0) _dmatx.attachInterrupt(dmaInterrupt);
+  else if (_spi_num == 1) _dmatx.attachInterrupt(dmaInterrupt1);
+  else _dmatx.attachInterrupt(dmaInterrupt2);
 
 #elif defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
-// 320*240/3 = 25600
+// 240*240/2 = 28800 so fits in 2
 #ifdef DEBUG_ASYNC_LEDS
   digitalWriteFast(DEBUG_PIN_4, !digitalReadFast(DEBUG_PIN_4));
 #endif
-  if (_dma_state & GC9A01A_DMA_EVER_INIT) { // Have we init this stuff before?
-    // Try to just set the buffers...
-    _dmasettings[0].sourceBuffer(_pfbtft, (COUNT_WORDS_WRITE)*2);
-    _dmasettings[1].sourceBuffer(&_pfbtft[COUNT_WORDS_WRITE],
-                                 COUNT_WORDS_WRITE * 2);
-    _dmasettings[2].sourceBuffer(&_pfbtft[COUNT_WORDS_WRITE * 2],
-                                 COUNT_WORDS_WRITE * 2);
-    // and maybe the interrupt settings...
-    if (_frame_callback_on_HalfDone)
-      _dmasettings[1].interruptAtHalf();
-    else
-      _dmasettings[1].TCD->CSR &= ~DMA_TCD_CSR_INTHALF;
-  } else {
-    // First time we init...
-    _dmasettings[0].sourceBuffer(_pfbtft, (COUNT_WORDS_WRITE)*2);
-    _dmasettings[0].destination(_pimxrt_spi->TDR);
-    _dmasettings[0].TCD->ATTR_DST = 1;
-    _dmasettings[0].replaceSettingsOnCompletion(_dmasettings[1]);
+  _dma_data[_spi_num]._dmasettings[0].sourceBuffer(_pfbtft, (COUNT_WORDS_WRITE)*2);
+  _dma_data[_spi_num]._dmasettings[0].destination(_pimxrt_spi->TDR);
+  _dma_data[_spi_num]._dmasettings[0].TCD->ATTR_DST = 1;
+  _dma_data[_spi_num]._dmasettings[0].replaceSettingsOnCompletion(_dma_data[_spi_num]._dmasettings[1]);
 
-    _dmasettings[1].sourceBuffer(&_pfbtft[COUNT_WORDS_WRITE],
-                                 COUNT_WORDS_WRITE * 2);
-    _dmasettings[1].destination(_pimxrt_spi->TDR);
-    _dmasettings[1].TCD->ATTR_DST = 1;
-    _dmasettings[1].replaceSettingsOnCompletion(_dmasettings[2]);
-    if (_frame_callback_on_HalfDone)
-      _dmasettings[1].interruptAtHalf();
-    else
-      _dmasettings[1].TCD->CSR &= ~DMA_TCD_CSR_INTHALF;
+  _dma_data[_spi_num]._dmasettings[1].sourceBuffer(&_pfbtft[COUNT_WORDS_WRITE],
+                               COUNT_WORDS_WRITE * 2);
+  _dma_data[_spi_num]._dmasettings[1].destination(_pimxrt_spi->TDR);
+  _dma_data[_spi_num]._dmasettings[1].TCD->ATTR_DST = 1;
 
-    _dmasettings[2].sourceBuffer(&_pfbtft[COUNT_WORDS_WRITE * 2],
-                                 COUNT_WORDS_WRITE * 2);
-    _dmasettings[2].destination(_pimxrt_spi->TDR);
-    _dmasettings[2].TCD->ATTR_DST = 1;
-    _dmasettings[2].replaceSettingsOnCompletion(_dmasettings[0]);
-    _dmasettings[2].interruptAtCompletion();
+  _dma_data[_spi_num]._dmasettings[1].replaceSettingsOnCompletion(_dma_data[_spi_num]._dmasettings[0]);
+  _dma_data[_spi_num]._dmasettings[1].interruptAtCompletion();
+  if (_frame_callback_on_HalfDone)
+    _dma_data[_spi_num]._dmasettings[0].interruptAtCompletion();
+  else
+    _dma_data[_spi_num]._dmasettings[0].TCD->CSR &= ~(DMA_TCD_CSR_DREQ);
 
-// Setup DMA main object
-// Serial.println("Setup _dmatx");
-// Serial.println("DMA initDMASettings - before dmatx");
+  // Setup DMA main object
+  //Serial.println("Setup _dmatx");
+  // Serial.println("DMA initDMASettings - before dmatx");
 #ifdef DEBUG_ASYNC_LEDS
     digitalWriteFast(DEBUG_PIN_4, !digitalReadFast(DEBUG_PIN_4));
 #endif
-    _dmatx = _dmasettings[0];
-    _dmatx.begin(true);
-    _dmatx.triggerAtHardwareEvent(dmaTXevent);
+  _dma_data[_spi_num]._dmatx.begin(true);
+  _dma_data[_spi_num]._dmatx.triggerAtHardwareEvent(dmaTXevent);
 #ifdef DEBUG_ASYNC_LEDS
     digitalWriteFast(DEBUG_PIN_4, !digitalReadFast(DEBUG_PIN_4));
 #endif
-    if (_spi_num == 0)
-      _dmatx.attachInterrupt(dmaInterrupt);
-    else if (_spi_num == 1)
-      _dmatx.attachInterrupt(dmaInterrupt1);
-    else
-      _dmatx.attachInterrupt(dmaInterrupt2);
-  }
+  _dma_data[_spi_num]._dmatx = _dma_data[_spi_num]._dmasettings[0];
+  // probably could use const table of functions...
+  if (_spi_num == 0) _dma_data[_spi_num]._dmatx.attachInterrupt(dmaInterrupt);
+  else if (_spi_num == 1) _dma_data[_spi_num]._dmatx.attachInterrupt(dmaInterrupt1);
+  else _dma_data[_spi_num]._dmatx.attachInterrupt(dmaInterrupt2);
+
 #ifdef DEBUG_ASYNC_LEDS
   digitalWriteFast(DEBUG_PIN_4, !digitalReadFast(DEBUG_PIN_4));
 #endif
@@ -671,16 +635,15 @@ void GC9A01A_t3n::dumpDMASettings() {
   // T3.6
   Serial.printf("DMA dump TCDs %d\n", _dmatx.channel);
   dumpDMA_TCD(&_dmatx, "TX: ");
-  dumpDMA_TCD(&_dmasettings[0], " 0: ");
-  dumpDMA_TCD(&_dmasettings[1], " 1: ");
-  dumpDMA_TCD(&_dmasettings[2], " 2: ");
-  dumpDMA_TCD(&_dmasettings[3], " 3: ");
+  dumpDMA_TCD(&_dmasettings[_spi_num][0], " 0: ");
+  dumpDMA_TCD(&_dmasettings[_spi_num][1], " 1: ");
+  dumpDMA_TCD(&_dmasettings[_spi_num][2], " 2: ");
+
 #elif defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
   // Serial.printf("DMA dump TCDs %d\n", _dmatx.channel);
-  dumpDMA_TCD(&_dmatx, "TX: ");
-  dumpDMA_TCD(&_dmasettings[0], " 0: ");
-  dumpDMA_TCD(&_dmasettings[1], " 1: ");
-  dumpDMA_TCD(&_dmasettings[2], " 2: ");
+  dumpDMA_TCD(&_dma_data[_spi_num]._dmatx, " TX ");
+  dumpDMA_TCD(&_dma_data[_spi_num]._dmasettings[0], " 0: ");
+  dumpDMA_TCD(&_dma_data[_spi_num]._dmasettings[1], " 1: ");
 #elif defined(__MK64FX512__)
   Serial.printf("DMA dump TX:%d RX:%d\n", _dmatx.channel, _dmarx.channel);
   dumpDMA_TCD(&_dmatx);
@@ -737,18 +700,17 @@ bool GC9A01A_t3n::updateScreenAsync(
   // T3.6
   //==========================================
   if (update_cont) {
-    // Try to link in #3 into the chain
-    //_dmasettings[2].replaceSettingsOnCompletion(_dmasettings[3]);
-    //_dmasettings[2].TCD->CSR &= ~(DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_DREQ);
-    //// Don't interrupt on this one...
-    _dmasettings[2].TCD->CSR &=
-        ~(DMA_TCD_CSR_DREQ); // Don't disable on this one
+    // Try to link in #3 into the chain (_cnt_dma_settings)
+    _dmasettings[_spi_num][SCREEN_DMA_NUM_SETTINGS-1].replaceSettingsOnCompletion(_dmasettings[_spi_num][SCREEN_DMA_NUM_SETTINGS]);
+    _dmasettings[_spi_num][SCREEN_DMA_NUM_SETTINGS-1].TCD->CSR &= ~(DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_DREQ);  // Don't interrupt on this one... 
+    _dmasettings[_spi_num][SCREEN_DMA_NUM_SETTINGS].interruptAtCompletion();
+    _dmasettings[_spi_num][SCREEN_DMA_NUM_SETTINGS].TCD->CSR &= ~(DMA_TCD_CSR_DREQ);  // Don't disable on this one  
     _dma_state |= GC9A01A_DMA_CONT;
   } else {
     // In this case we will only run through once...
-    //_dmasettings[2].replaceSettingsOnCompletion(_dmasettings[0]);
-    _dmasettings[2].interruptAtCompletion();
-    _dmasettings[2].disableOnCompletion();
+    _dmasettings[_spi_num][SCREEN_DMA_NUM_SETTINGS-1].replaceSettingsOnCompletion(_dmasettings[_spi_num][0]);
+    _dmasettings[_spi_num][SCREEN_DMA_NUM_SETTINGS-1].interruptAtCompletion();
+    _dmasettings[_spi_num][SCREEN_DMA_NUM_SETTINGS-1].disableOnCompletion();
     _dma_state &= ~GC9A01A_DMA_CONT;
   }
 
@@ -767,10 +729,10 @@ bool GC9A01A_t3n::updateScreenAsync(
   // now lets start up the DMA
   //	volatile uint16_t  biter = _dmatx.TCD->BITER;
   // DMA_CDNE_CDNE(_dmatx.channel);
-  _dmatx = _dmasettings[0];
+  _dmatx = _dmasettings[_spi_num][0];
   //	_dmatx.TCD->BITER = biter;
   _dma_frame_count = 0; // Set frame count back to zero.
-  _dmaActiveDisplay = this;
+  _dmaActiveDisplay[_spi_num]  = this;
   _dma_state |= GC9A01A_DMA_ACTIVE;
   _pkinetisk_spi->RSER |=
       SPI_RSER_TFFF_DIRS |
@@ -788,7 +750,7 @@ bool GC9A01A_t3n::updateScreenAsync(
   if ((uint32_t)_pfbtft >= 0x20200000u)
     arm_dcache_flush(_pfbtft, CBALLOC);
 
-  _dmasettings[2].TCD->CSR &= ~(DMA_TCD_CSR_DREQ);
+  _dma_data[_spi_num]._dmasettings[1].TCD->CSR &= ~(DMA_TCD_CSR_DREQ);
   beginSPITransaction(_SPI_CLOCK);
 // Doing full window.
 #ifdef DEBUG_ASYNC_LEDS
@@ -806,22 +768,22 @@ bool GC9A01A_t3n::updateScreenAsync(
   _pimxrt_spi->DER = LPSPI_DER_TDDE;
   _pimxrt_spi->SR = 0x3f00; // clear out all of the other status...
 
-  _dmatx.triggerAtHardwareEvent(_spi_hardware->tx_dma_channel);
+   _dma_data[_spi_num]._dmatx.triggerAtHardwareEvent(_spi_hardware->tx_dma_channel);
 
-  _dmatx = _dmasettings[0];
+   _dma_data[_spi_num]._dmatx = _dma_data[_spi_num]._dmasettings[0];
 #ifdef DEBUG_ASYNC_LEDS
   digitalWriteFast(DEBUG_PIN_4, !digitalReadFast(DEBUG_PIN_4));
 #endif
 
-  _dmatx.begin(false);
-  _dmatx.enable();
+   _dma_data[_spi_num]._dmatx.begin(false);
+   _dma_data[_spi_num]._dmatx.enable();
 
   _dma_frame_count = 0; // Set frame count back to zero.
   _dmaActiveDisplay[_spi_num] = this;
   if (update_cont) {
     _dma_state |= GC9A01A_DMA_CONT;
   } else {
-    _dmasettings[2].disableOnCompletion();
+     _dma_data[_spi_num]._dmasettings[1].disableOnCompletion();
     _dma_state &= ~GC9A01A_DMA_CONT;
   }
 
@@ -885,7 +847,7 @@ bool GC9A01A_t3n::updateScreenAsync(
   }
 
   _dma_frame_count = 0; // Set frame count back to zero.
-  _dmaActiveDisplay = this;
+  _dmaActiveDisplay[_spi_num] = this;
   if (update_cont) {
     _dma_state |= GC9A01A_DMA_CONT;
   } else {
@@ -908,8 +870,10 @@ void GC9A01A_t3n::endUpdateAsync() {
 #ifdef ENABLE_GC9A01A_FRAMEBUFFER
   if (_dma_state & GC9A01A_DMA_CONT) {
     _dma_state &= ~GC9A01A_DMA_CONT; // Turn of the continueous mode
-#if defined(__MK66FX1M0__) || defined(__IMXRT1062__)
-    _dmasettings[2].disableOnCompletion();
+#if defined(__MK66FX1M0__)
+    _dmasettings[_spi_num][2].disableOnCompletion();
+#elif  defined(__IMXRT1062__)
+    _dma_data[_spi_num]._dmasettings[1].disableOnCompletion();
 #endif
   }
 #endif
@@ -1439,309 +1403,6 @@ void GC9A01A_t3n::invertDisplay(boolean i) {
   endSPITransaction();
 }
 
-/*
-uint8_t GC9A01A_t3n::readdata(void)
-{
-  uint8_t r;
-       // Try to work directly with SPI registers...
-       // First wait until output queue is empty
-        uint16_t wTimeout = 0xffff;
-        while (((_pkinetisk_spi->SR) & (15 << 12)) && (--wTimeout)) ; // wait
-until empty
-
-//       	_pkinetisk_spi->MCR |= SPI_MCR_CLR_RXF; // discard any received
-data
-//		_pkinetisk_spi->SR = SPI_SR_TCF;
-
-        // Transfer a 0 out...
-        writedata8_cont(0);
-
-        // Now wait until completed.
-        wTimeout = 0xffff;
-        while (((_pkinetisk_spi->SR) & (15 << 12)) && (--wTimeout)) ; // wait
-until empty
-        r = _pkinetisk_spi->POPR;  // get the received byte... should check for
-it first...
-    return r;
-}
- */
-
-uint8_t GC9A01A_t3n::readcommand8(uint8_t c, uint8_t index) {
-  // Bail if not valid miso
-  if (_miso == 0xff)
-    return 0;
-
-#ifdef KINETISK
-  uint16_t wTimeout = 0xffff;
-  uint8_t r = 0;
-
-  beginSPITransaction(_SPI_CLOCK);
-  if (_spi_num == 0) {
-    // Only SPI object has larger queue
-    while (((_pkinetisk_spi->SR) & (15 << 12)) && (--wTimeout))
-      ; // wait until empty
-
-    // Make sure the last frame has been sent...
-    _pkinetisk_spi->SR = SPI_SR_TCF; // dlear it out;
-    wTimeout = 0xffff;
-    while (!((_pkinetisk_spi->SR) & SPI_SR_TCF) && (--wTimeout))
-      ; // wait until it says the last frame completed
-
-    // clear out any current received bytes
-    wTimeout = 0x10; // should not go more than 4...
-    while ((((_pkinetisk_spi->SR) >> 4) & 0xf) && (--wTimeout)) {
-      r = _pkinetisk_spi->POPR;
-    }
-
-    // writecommand(0xD9); // sekret command
-    _pkinetisk_spi->PUSHR =
-        0xD9 | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-    //	while (((_pkinetisk_spi->SR) & (15 << 12)) > (3 << 12)) ; // wait if
-    //FIFO full
-
-    // writedata(0x10 + index);
-    _pkinetisk_spi->PUSHR =
-        (0x10 + index) | (pcs_data << 16) | SPI_PUSHR_CTAS(0);
-    //	while (((_pkinetisk_spi->SR) & (15 << 12)) > (3 << 12)) ; // wait if
-    //FIFO full
-    // writecommand(c);
-    _pkinetisk_spi->PUSHR =
-        c | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-    //	while (((_pkinetisk_spi->SR) & (15 << 12)) > (3 << 12)) ; // wait if
-    //FIFO full
-
-    // readdata
-    _pkinetisk_spi->PUSHR = 0 | (pcs_data << 16) | SPI_PUSHR_CTAS(0);
-    //	while (((_pkinetisk_spi->SR) & (15 << 12)) > (3 << 12)) ; // wait if
-    //FIFO full
-
-    // Now wait until completed.
-    wTimeout = 0xffff;
-    while (((_pkinetisk_spi->SR) & (15 << 12)) && (--wTimeout))
-      ; // wait until empty
-
-    // Make sure the last frame has been sent...
-    _pkinetisk_spi->SR = SPI_SR_TCF; // dlear it out;
-    wTimeout = 0xffff;
-    while (!((_pkinetisk_spi->SR) & SPI_SR_TCF) && (--wTimeout))
-      ; // wait until it says the last frame completed
-
-    wTimeout = 0x10; // should not go more than 4...
-    // lets get all of the values on the FIFO
-    while ((((_pkinetisk_spi->SR) >> 4) & 0xf) && (--wTimeout)) {
-      r = _pkinetisk_spi->POPR;
-    }
-  } else {
-    while (((_pkinetisk_spi->SR) & (15 << 12)) && (--wTimeout))
-      ; // wait until empty
-
-    // Make sure the last frame has been sent...
-    _pkinetisk_spi->SR = SPI_SR_TCF; // dlear it out;
-    wTimeout = 0xffff;
-    while (!((_pkinetisk_spi->SR) & SPI_SR_TCF) && (--wTimeout))
-      ; // wait until it says the last frame completed
-
-    // clear out any current received bytes
-    wTimeout = 0x10; // should not go more than 4...
-    while ((((_pkinetisk_spi->SR) >> 4) & 0xf) && (--wTimeout)) {
-      r = _pkinetisk_spi->POPR;
-    }
-
-    // writecommand(0xD9); // sekret command
-    _pkinetisk_spi->PUSHR =
-        0xD9 | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-    while (((_pkinetisk_spi->SR) & (15 << 12)) > (0 << 12))
-      ; // wait if FIFO full
-
-    // writedata(0x10 + index);
-    _pkinetisk_spi->PUSHR =
-        (0x10 + index) | (pcs_data << 16) | SPI_PUSHR_CTAS(0);
-    while (((_pkinetisk_spi->SR) & (15 << 12)) > (0 << 12))
-      ; // wait if FIFO full
-
-    // See if there are any return values to pop
-    while (((_pkinetisk_spi->SR) >> 4) & 0xf) {
-      r = _pkinetisk_spi->POPR;
-    }
-
-    // writecommand(c);
-    _pkinetisk_spi->PUSHR =
-        c | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-    while (((_pkinetisk_spi->SR) & (15 << 12)) > (0 << 12))
-      ; // wait if FIFO full
-
-    // See if there are any return values to pop
-    while (((_pkinetisk_spi->SR) >> 4) & 0xf) {
-      r = _pkinetisk_spi->POPR;
-    }
-
-    // readdata
-    _pkinetisk_spi->PUSHR = 0 | (pcs_data << 16) | SPI_PUSHR_CTAS(0);
-    while (((_pkinetisk_spi->SR) & (15 << 12)) > (0 << 12))
-      ; // wait if FIFO full
-
-    // See if there are any return values to pop
-    while (((_pkinetisk_spi->SR) >> 4) & 0xf) {
-      r = _pkinetisk_spi->POPR;
-    }
-    // Now wait until completed.
-    wTimeout = 0xffff;
-    while (((_pkinetisk_spi->SR) & (15 << 12)) && (--wTimeout))
-      ; // wait until empty
-
-    // Make sure the last frame has been sent...
-    _pkinetisk_spi->SR = SPI_SR_TCF; // dlear it out;
-    wTimeout = 0xffff;
-    while (!((_pkinetisk_spi->SR) & SPI_SR_TCF) && (--wTimeout))
-      ; // wait until it says the last frame completed
-
-    wTimeout = 0x10; // should not go more than 4...
-    // lets get all of the values on the FIFO
-    while ((((_pkinetisk_spi->SR) >> 4) & 0xf) && (--wTimeout)) {
-      r = _pkinetisk_spi->POPR;
-    }
-  }
-  endSPITransaction();
-  return r; // get the received byte... should check for it first...
-#elif defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
-  uint16_t wTimeout = 0xffff;
-  uint8_t r = 0;
-
-  beginSPITransaction(_SPI_CLOCK_READ);
-  // Lets assume that queues are empty as we just started transaction.
-  _pimxrt_spi->CR = LPSPI_CR_MEN |
-                    LPSPI_CR_RRF /* | LPSPI_CR_RTF */; // actually clear both...
-  // writecommand(0xD9); // sekret command
-  maybeUpdateTCR(_tcr_dc_assert | LPSPI_TCR_FRAMESZ(7) | LPSPI_TCR_CONT);
-  _pimxrt_spi->TDR = 0xD9;
-
-  // writedata(0x10 + index);
-  maybeUpdateTCR(_tcr_dc_not_assert | LPSPI_TCR_FRAMESZ(7) | LPSPI_TCR_CONT);
-  _pimxrt_spi->TDR = 0x10 + index;
-
-  // writecommand(c);
-  maybeUpdateTCR(_tcr_dc_assert | LPSPI_TCR_FRAMESZ(7) | LPSPI_TCR_CONT);
-  _pimxrt_spi->TDR = c;
-
-  // readdata
-  maybeUpdateTCR(_tcr_dc_not_assert | LPSPI_TCR_FRAMESZ(7));
-  _pimxrt_spi->TDR = 0;
-
-  // Now wait until completed.
-  wTimeout = 0xffff;
-  uint8_t rx_count = 4;
-  while (rx_count && wTimeout) {
-    if ((_pimxrt_spi->RSR & LPSPI_RSR_RXEMPTY) == 0) {
-      r = _pimxrt_spi->RDR; // Read any pending RX bytes in
-      rx_count--;           // decrement count of bytes still levt
-    }
-  }
-  endSPITransaction();
-  return r; // get the received byte... should check for it first...
-#else
-  beginSPITransaction(_SPI_CLOCK);
-  writecommand_cont(0xD9);
-  writedata8_cont(0x10 + index);
-
-  writecommand_cont(c);
-  writedata8_cont(0);
-  uint8_t r = waitTransmitCompleteReturnLast();
-  endSPITransaction();
-  return r;
-
-#endif
-}
-
-
-uint16_t GC9A01A_t3n::readScanLine() {
-if (_miso == 0xff)  return 0; // dont have miso pin
-
-#ifdef KINETISK
-  beginSPITransaction(_SPI_CLOCK_READ);
-  writecommand_cont(0x45); // read from RAM
-
-  // transmit a DUMMY byte before the color bytes
-  _pkinetisk_spi->PUSHR =
-      0 | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-
-  // skip values returned by the queued up transfers and the current in-flight
-  // transfer
-  uint32_t sr = _pkinetisk_spi->SR;
-  uint8_t skipCount = ((sr >> 4) & 0xF) + ((sr >> 12) & 0xF) + 1;
-
-  uint8_t txCount = 2;
-  uint8_t rxCount = 2;
-  uint8_t rxVals[2];
-  while (txCount || rxCount) {
-    // transmit another byte if possible
-    if (txCount && (_pkinetisk_spi->SR & 0xF000) <= _fifo_full_test) {
-      txCount--;
-      if (txCount) {
-        _pkinetisk_spi->PUSHR = 0 | (pcs_data << 16) |
-                                SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-      } else {
-        _pkinetisk_spi->PUSHR = 0 | (pcs_data << 16) |
-                                SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
-      }
-    }
-
-    // receive another byte if possible, and either skip it or store the color
-    if (rxCount && (_pkinetisk_spi->SR & 0xF0)) {
-      uint8_t rx = _pkinetisk_spi->POPR;
-
-      if (skipCount) {
-        skipCount--;
-      } else {
-        rxCount--;
-        rxVals[rxCount] = rx;
-      }
-    }
-  }
-
-  // wait for End of Queue
-  while ((_pkinetisk_spi->SR & SPI_SR_EOQF) == 0)
-    ;
-  _pkinetisk_spi->SR = SPI_SR_EOQF; // make sure it is clear
-  endSPITransaction();
-
-  return rxVals[0] + (uint16_t)(rxVals[1] << 8); // TODO...
-
-#elif defined(__IMXRT1062__)
-
-  // clear out queues. 
-
-  beginSPITransaction(_SPI_CLOCK_READ);
-//  _pimxrt_spi->SR = LPSPI_SR_TCF | LPSPI_SR_FCF | LPSPI_SR_WCF;
-  _pimxrt_spi->SR = LPSPI_SR_TCF | LPSPI_SR_FCF | LPSPI_SR_WCF;
-//  writecommand_cont(0x45); // This will wait until it completes
-  maybeUpdateTCR(_tcr_dc_assert | LPSPI_TCR_FRAMESZ(7) | LPSPI_TCR_CONT);
-  // BUGBUG - maybe update does not hold CONT if we are handling DC as IO pin... 
-  // so see if hacking it helps...
-  _pimxrt_spi->TCR = _spi_tcr_current | LPSPI_TCR_CONT;
-
-  _pimxrt_spi->TDR = 0x45; // send command
-  pending_rx_count++; //
-  while (!(_pimxrt_spi->SR & LPSPI_SR_WCF)) ; // wait until word complete
-  delayMicroseconds(3);
-  _pimxrt_spi->TCR = _spi_tcr_current;
-  maybeUpdateTCR(_tcr_dc_not_assert | LPSPI_TCR_FRAMESZ(7));
-  _pimxrt_spi->TDR = 0;
-  pending_rx_count++; //
-  maybeUpdateTCR(_tcr_dc_not_assert | LPSPI_TCR_FRAMESZ(7) );
-  _pimxrt_spi->TDR = 0;
-  pending_rx_count++; //
-//  _pimxrt_spi->TDR = 0;
-//  pending_rx_count++; //
-
-  uint16_t line = waitTransmitCompleteReturnLast();
-  endSPITransaction();
-  return line;
-#else
-  // TLC
-  return 0;
-#endif
-
-}
 
 void GC9A01A_t3n::setFrameRateControl(uint8_t mode) {
   // Do simple version
@@ -1757,9 +1418,6 @@ void GC9A01A_t3n::setFrameRateControl(uint8_t mode) {
 // Read Pixel at x,y and get back 16-bit packed color
 #define READ_PIXEL_PUSH_BYTE 0x3f
 uint16_t GC9A01A_t3n::readPixel(int16_t x, int16_t y) {
-#ifdef KINETISK
-// BUGBUG:: Should add some validation of X and Y
-// Now if we are in buffer mode can return real fast
 #ifdef ENABLE_GC9A01A_FRAMEBUFFER
   if (_use_fbtft) {
     x += _originx;
@@ -1768,75 +1426,16 @@ uint16_t GC9A01A_t3n::readPixel(int16_t x, int16_t y) {
     return _pfbtft[y * _width + x];
   }
 #endif
-
-  if (_miso == 0xff)
-    return 0xffff; // bail if not valid miso
-
-  // First pass for other SPI busses use readRect to handle the read...
-  if (_spi_num != 0) {
-    // Only SPI object has larger queue
-    uint16_t colors;
-    readRect(x, y, 1, 1, &colors);
-    return colors;
-  }
-
-  uint8_t dummy __attribute__((unused));
-  uint8_t r, g, b;
-
-  beginSPITransaction(_SPI_CLOCK_READ);
-
-  // Update our origin.
-  x += _originx;
-  y += _originy;
-
-  setAddr(x, y, x, y);
-  writecommand_cont(GC9A01A_RAMRD); // read from RAM
-  waitTransmitComplete();
-
-  // Push 4 bytes over SPI
-  _pkinetisk_spi->PUSHR =
-      0 | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-  waitFifoEmpty(); // wait for both queues to be empty.
-
-  _pkinetisk_spi->PUSHR =
-      0 | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-  _pkinetisk_spi->PUSHR =
-      0 | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-  _pkinetisk_spi->PUSHR =
-      0 | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
-
-  // Wait for End of Queue
-  while ((_pkinetisk_spi->SR & SPI_SR_EOQF) == 0)
-    ;
-  _pkinetisk_spi->SR = SPI_SR_EOQF; // make sure it is clear
-
-  // Read Pixel Data
-  dummy = _pkinetisk_spi->POPR; // Read a DUMMY byte of GRAM
-  r = _pkinetisk_spi->POPR;     // Read a RED byte of GRAM
-  g = _pkinetisk_spi->POPR;     // Read a GREEN byte of GRAM
-  b = _pkinetisk_spi->POPR;     // Read a BLUE byte of GRAM
-
-  endSPITransaction();
-  return color565(r, g, b);
-#else
-  // Kinetisk
-  uint16_t colors = 0;
-  readRect(x, y, 1, 1, &colors);
-  return colors;
-#endif
+  return 0xffff;
 }
 
 // Now lets see if we can read in multiple pixels
-#ifdef KINETISK
 void GC9A01A_t3n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t *pcolors) {
-  // Use our Origin.
-  x += _originx;
-  y += _originy;
-// BUGBUG:: Should add some validation of X and Y
-
 #ifdef ENABLE_GC9A01A_FRAMEBUFFER
   if (_use_fbtft) {
+    x += _originx;
+    y += _originy;
     uint16_t *pfbPixel_row = &_pfbtft[y * _width + x];
     for (; h > 0; h--) {
       uint16_t *pfbPixel = pfbPixel_row;
@@ -1848,219 +1447,7 @@ void GC9A01A_t3n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
     return;
   }
 #endif
-
-  if (_miso == 0xff)
-    return; // bail if not valid miso
-
-  uint8_t rgb[3]; // RGB bytes received from the display
-  uint8_t rgbIdx = 0;
-  uint32_t txCount =
-      w * h * 3; // number of bytes we will transmit to the display
-  uint32_t rxCount =
-      txCount; // number of bytes we will receive back from the display
-
-  beginSPITransaction(_SPI_CLOCK_READ);
-
-  setAddr(x, y, x + w - 1, y + h - 1);
-  writecommand_cont(GC9A01A_RAMRD); // read from RAM
-
-  // transmit a DUMMY byte before the color bytes
-  _pkinetisk_spi->PUSHR =
-      0 | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-
-  // skip values returned by the queued up transfers and the current in-flight
-  // transfer
-  uint32_t sr = _pkinetisk_spi->SR;
-  uint8_t skipCount = ((sr >> 4) & 0xF) + ((sr >> 12) & 0xF) + 1;
-
-  while (txCount || rxCount) {
-    // transmit another byte if possible
-    if (txCount && (_pkinetisk_spi->SR & 0xF000) <= _fifo_full_test) {
-      txCount--;
-      if (txCount) {
-        _pkinetisk_spi->PUSHR = READ_PIXEL_PUSH_BYTE | (pcs_data << 16) |
-                                SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-      } else {
-        _pkinetisk_spi->PUSHR = READ_PIXEL_PUSH_BYTE | (pcs_data << 16) |
-                                SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
-      }
-    }
-
-    // receive another byte if possible, and either skip it or store the color
-    if (rxCount && (_pkinetisk_spi->SR & 0xF0)) {
-      rgb[rgbIdx] = _pkinetisk_spi->POPR;
-
-      if (skipCount) {
-        skipCount--;
-      } else {
-        rxCount--;
-        rgbIdx++;
-        if (rgbIdx == 3) {
-          rgbIdx = 0;
-          *pcolors++ = color565(rgb[0], rgb[1], rgb[2]);
-        }
-      }
-    }
-  }
-
-  // wait for End of Queue
-  while ((_pkinetisk_spi->SR & SPI_SR_EOQF) == 0)
-    ;
-  _pkinetisk_spi->SR = SPI_SR_EOQF; // make sure it is clear
-  endSPITransaction();
 }
-#elif defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
-void GC9A01A_t3n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
-                           uint16_t *pcolors) {
-  // Use our Origin.
-  x += _originx;
-  y += _originy;
-// BUGBUG:: Should add some validation of X and Y
-
-#ifdef ENABLE_GC9A01A_FRAMEBUFFER
-  if (_use_fbtft) {
-    uint16_t *pfbPixel_row = &_pfbtft[y * _width + x];
-    for (; h > 0; h--) {
-      uint16_t *pfbPixel = pfbPixel_row;
-      for (int i = 0; i < w; i++) {
-        *pcolors++ = *pfbPixel++;
-      }
-      pfbPixel_row += _width;
-    }
-    return;
-  }
-#endif
-
-  if (_miso == 0xff)
-    return; // bail if not valid miso
-
-  uint8_t rgb[3]; // RGB bytes received from the display
-  uint8_t rgbIdx = 0;
-  uint32_t txCount =
-      w * h * 3; // number of bytes we will transmit to the display
-  uint32_t rxCount =
-      txCount; // number of bytes we will receive back from the display
-
-  beginSPITransaction(_SPI_CLOCK_READ);
-
-  setAddr(x, y, x + w - 1, y + h - 1);
-  writecommand_cont(GC9A01A_RAMRD); // read from RAM
-
-  // transmit a DUMMY byte before the color bytes
-  writedata8_last(0); // BUGBUG:: maybe fix this as this will wait until the
-                      // byte fully transfers through.
-
-  while (txCount || rxCount) {
-    // transmit another byte if possible
-    if (txCount && (_pimxrt_spi->SR & LPSPI_SR_TDF)) {
-      txCount--;
-      if (txCount) {
-        _pimxrt_spi->TDR = 0;
-      } else {
-        maybeUpdateTCR(_tcr_dc_not_assert |
-                       LPSPI_TCR_FRAMESZ(7)); // remove the CONTINUE...
-        while ((_pimxrt_spi->SR & LPSPI_SR_TDF) == 0)
-          ; // wait if queue was full
-        _pimxrt_spi->TDR = 0;
-      }
-    }
-
-    // receive another byte if possible, and either skip it or store the color
-    if (rxCount && !(_pimxrt_spi->RSR & LPSPI_RSR_RXEMPTY)) {
-      rgb[rgbIdx] = _pimxrt_spi->RDR;
-
-      rxCount--;
-      rgbIdx++;
-      if (rgbIdx == 3) {
-        rgbIdx = 0;
-        *pcolors++ = color565(rgb[0], rgb[1], rgb[2]);
-      }
-    }
-  }
-
-  // We should have received everything so should be done
-  endSPITransaction();
-}
-
-#else
-
-// Teensy LC version
-void GC9A01A_t3n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
-                           uint16_t *pcolors) {
-  // Use our Origin.
-  x += _originx;
-  y += _originy;
-  // BUGBUG:: Should add some validation of X and Y
-
-  if (_miso == 0xff)
-    return; // bail if not valid miso
-
-  uint8_t rgb[3]; // RGB bytes received from the display
-  uint8_t rgbIdx = 0;
-  uint32_t txCount =
-      w * h * 3; // number of bytes we will transmit to the display
-  uint32_t rxCount =
-      txCount; // number of bytes we will receive back from the display
-
-  beginSPITransaction(_SPI_CLOCK_READ);
-
-  setAddr(x, y, x + w - 1, y + h - 1);
-  writecommand_cont(GC9A01A_RAMRD); // read from RAM
-
-  // transmit a DUMMY byte before the color bytes
-  writedata8_cont(0);
-
-  // Wait until that one returns, Could do a little better and double buffer but
-  // this is easer for now.
-  waitTransmitComplete();
-
-// Since double buffer setup lets try keeping read/write in sync
-#define RRECT_TIMEOUT 0xffff
-#undef READ_PIXEL_PUSH_BYTE
-#define READ_PIXEL_PUSH_BYTE 0 // try with zero to see...
-  uint16_t timeout_countdown = RRECT_TIMEOUT;
-  uint16_t dl_in;
-  // Write out first byte:
-
-  while (!(_pkinetisl_spi->S & SPI_S_SPTEF))
-    ; // Not worried that this can completely hang?
-  _pkinetisl_spi->DL = READ_PIXEL_PUSH_BYTE;
-
-  while (rxCount && timeout_countdown) {
-    // Now wait until we can output something
-    dl_in = 0xffff;
-    if (rxCount > 1) {
-      while (!(_pkinetisl_spi->S & SPI_S_SPTEF))
-        ; // Not worried that this can completely hang?
-      if (_pkinetisl_spi->S & SPI_S_SPRF)
-        dl_in = _pkinetisl_spi->DL;
-      _pkinetisl_spi->DL = READ_PIXEL_PUSH_BYTE;
-    }
-
-    // Now wait until there is a byte available to receive
-    while ((dl_in != 0xffff) && !(_pkinetisl_spi->S & SPI_S_SPRF) &&
-           --timeout_countdown)
-      ;
-    if (timeout_countdown) { // Make sure we did not get here because of timeout
-      rxCount--;
-      rgb[rgbIdx] = (dl_in != 0xffff) ? dl_in : _pkinetisl_spi->DL;
-      rgbIdx++;
-      if (rgbIdx == 3) {
-        rgbIdx = 0;
-        *pcolors++ = color565(rgb[0], rgb[1], rgb[2]);
-      }
-      timeout_countdown = timeout_countdown;
-    }
-  }
-
-  // Debug code.
-  /*	if (timeout_countdown == 0) {
-                  Serial.print("RRect Timeout ");
-                  Serial.println(rxCount, DEC);
-          } */
-  endSPITransaction();
-}
-#endif
 
 // Now lets see if we can writemultiple pixels
 void GC9A01A_t3n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
@@ -2589,12 +1976,11 @@ FLASHMEM void GC9A01A_t3n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
   _SPI_CLOCK = spi_clock;           // #define GC9A01A_SPICLOCK 30000000
   _SPI_CLOCK_READ = spi_clock_read; //#define GC9A01A_SPICLOCK_READ 2000000
 
-  // Serial.printf("_t3n::begin mosi:%d miso:%d SCLK:%d CS:%d DC:%d SPI clocks:
-  // %lu %lu\n", _mosi, _miso, _sclk, _cs, _dc, _SPI_CLOCK, _SPI_CLOCK_READ);
-  // Serial.flush();
+  Serial.printf("_t3n::begin mosi:%d SCLK:%d CS:%d DC:%d SPI clocks:%lu %lu\n",
+              _mosi, _sclk, _cs, _dc, _SPI_CLOCK, _SPI_CLOCK_READ);
 
-  if (SPI.pinIsMOSI(_mosi) && ((_miso == 0xff) || SPI.pinIsMISO(_miso)) &&
-      SPI.pinIsSCK(_sclk)) {
+  // Note this display does not use MISO so will ignore it.
+  if (SPI.pinIsMOSI(_mosi) && SPI.pinIsSCK(_sclk)) {
     _pspi = &SPI;
     _spi_num = 0; // Which buss is this spi on?
 #ifdef KINETISK
@@ -2610,9 +1996,7 @@ FLASHMEM void GC9A01A_t3n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
 
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__) ||                        \
     defined(__IMXRT1062__) || defined(__MKL26Z64__)
-  } else if (SPI1.pinIsMOSI(_mosi) &&
-             ((_miso == 0xff) || SPI1.pinIsMISO(_miso)) &&
-             SPI1.pinIsSCK(_sclk)) {
+  } else if (SPI1.pinIsMOSI(_mosi) && SPI1.pinIsSCK(_sclk)) {
     _pspi = &SPI1;
     _spi_num = 1; // Which buss is this spi on?
 #ifdef KINETISK
@@ -2626,9 +2010,7 @@ FLASHMEM void GC9A01A_t3n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
     _pkinetisl_spi = &KINETISL_SPI1;
 #endif
 #if !defined(__MKL26Z64__)
-  } else if (SPI2.pinIsMOSI(_mosi) &&
-             ((_miso == 0xff) || SPI2.pinIsMISO(_miso)) &&
-             SPI2.pinIsSCK(_sclk)) {
+  } else if (SPI2.pinIsMOSI(_mosi) && SPI2.pinIsSCK(_sclk)) {
     _pspi = &SPI2;
     _spi_num = 2; // Which buss is this spi on?
 #ifdef KINETISK
@@ -2645,16 +2027,13 @@ FLASHMEM void GC9A01A_t3n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
     Serial.println(
         "GC9A01A_t3n: The IO pins on the constructor are not valid SPI pins");
 
-    Serial.printf("    mosi:%d miso:%d SCLK:%d CS:%d DC:%d\n", _mosi, _miso,
-                  _sclk, _cs, _dc);
+    Serial.printf("    mosi:%d SCLK:%d CS:%d DC:%d\n", _mosi, _sclk, _cs, _dc);
     Serial.flush();
     return; // most likely will go bomb
   }
   // Make sure we have all of the proper SPI pins selected.
   _pspi->setMOSI(_mosi);
   _pspi->setSCK(_sclk);
-  if (_miso != 0xff)
-    _pspi->setMISO(_miso);
 
   // Hack to get hold of the SPI Hardware information...
   uint32_t *pa = (uint32_t *)((void *)_pspi);

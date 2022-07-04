@@ -68,10 +68,6 @@
 
 #ifndef _GC9A01A_t3N_H_
 #define _GC9A01A_t3N_H_
-#ifdef _SPIN_H_INCLUDED
-#warning "Spin library is no longer required"
-#endif
-#define _SPIN_H_INCLUDED // try to avoid spin library from loading.
 
 #define GC9A01A_USE_DMAMEM
 
@@ -81,7 +77,7 @@
 #if defined(__MK66FX1M0__) // T3.6
 #define ENABLE_GC9A01A_FRAMEBUFFER
 #define SCREEN_DMA_NUM_SETTINGS                                                \
-  3 // see if making it a constant value makes difference...
+  2 // see if making it a constant value makes difference...
 #elif defined(__MK64FX512__) // T3.5
 #define ENABLE_GC9A01A_FRAMEBUFFER
 #define SCREEN_DMA_NUM_SETTINGS                                                \
@@ -89,7 +85,7 @@
 #elif defined(__IMXRT1052__) || defined(__IMXRT1062__)
 #define ENABLE_GC9A01A_FRAMEBUFFER
 #define SCREEN_DMA_NUM_SETTINGS                                                \
-  3 // see if making it a constant value makes difference...
+  2 // see if making it a constant value makes difference...
 #endif
 #endif
 
@@ -259,6 +255,15 @@ typedef struct {
 
 #endif // _GFXFONT_H_
 
+#if defined(__IMXRT1062__)  // Teensy 4.x
+// Also define these in lower memory so as to make sure they are not cached...
+typedef struct {
+  DMASetting      _dmasettings[2];
+  DMAChannel      _dmatx;
+} GC9A01A_DMA_Data_t;
+#endif
+
+
 // These enumerate the text plotting alignment (reference datum point)
 #define TL_DATUM 0 // Top left (default)
 #define TC_DATUM 1 // Top centre
@@ -294,7 +299,7 @@ typedef struct {
 class GC9A01A_t3n : public Print {
 public:
   GC9A01A_t3n(uint8_t _CS, uint8_t _DC, uint8_t _RST = 255, uint8_t _MOSI = 11,
-              uint8_t _SCLK = 13, uint8_t _MISO = 12);
+              uint8_t _SCLK = 13);
   void begin(uint32_t spi_clock = GC9A01A_SPICLOCK,
              uint32_t spi_clock_read = GC9A01A_SPICLOCK_READ);
   void sleep(bool enable);
@@ -349,14 +354,19 @@ public:
     return (((r & 0x3E00) << 2) | ((g & 0x3F00) >> 3) | ((b & 0x3E00) >> 9));
   }
 
+  // Device does not have MISO line so query is not valid
   // uint8_t readdata(void);
-  uint8_t readcommand8(uint8_t reg, uint8_t index = 0);
-  uint16_t readScanLine();
+  //uint8_t readcommand8(uint8_t r//eg, uint8_t index = 0);
+  //uint16_t readScanLine();
   void setFrameRateControl(uint8_t mode);
 
   // Added functions to read pixel data...
+  // These will only work if there is a frame buffer
+  // as no MISO pin on display
   uint16_t readPixel(int16_t x, int16_t y);
   void readRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t *pcolors);
+
+
   void writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
                  const uint16_t *pcolors);
 
@@ -591,6 +601,11 @@ protected:
   bool _invisible = false;
   bool _standard = true; // no bounding rectangle or origin set.
 
+  uint16_t _x0_last = 0xffff;
+  uint16_t _x1_last = 0xffff;
+  uint16_t _y0_last = 0xffff;
+  uint16_t _y1_last = 0xffff;
+
   inline void updateDisplayClip() {
     _displayclipx1 = max(0, min(_clipx1 + _originx, width()));
     _displayclipx2 = max(0, min(_clipx2 + _originx, width()));
@@ -642,7 +657,7 @@ protected:
   uint8_t _rst;
   uint8_t _cs, _dc;
   uint8_t pcs_data, pcs_command;
-  uint8_t _miso, _mosi, _sclk;
+  uint8_t _mosi, _sclk;
 
 ///////////////////////////////
 // BUGBUG:: reorganize this area better!
@@ -693,36 +708,28 @@ protected:
   bool _frame_callback_on_HalfDone = false;
 
 // Add DMA support.
-#if defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
-  uint16_t
-      *_pfbtft_async; // pointer to async buffer at start of async operation...
   static GC9A01A_t3n *_dmaActiveDisplay[3]; // Use pointer to this as a way to
-                                            // get back to object...
-#else
-  static GC9A01A_t3n *_dmaActiveDisplay; // Use pointer to this as a way to get
-                                         // back to object...
-#endif
+
   volatile uint8_t _dma_state = 0;            // DMA status
   volatile uint32_t _dma_frame_count = 0;     // Can return a frame count...
   volatile uint16_t _dma_sub_frame_count = 0; // Can return a frame count...
 #if defined(__MK66FX1M0__)
   // T3.6 use Scatter/gather with chain to do transfer
-  static DMASetting _dmasettings[4];
-  static DMAChannel _dmatx;
+  static DMASetting _dmasettings[3][3];
+  DMAChannel _dmatx;
 #elif defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
   // try work around DMA memory cached.  So have a couple of buffers we copy
   // frame buffer into
   // as to move it out of the memory that is cached...
 
   static const uint32_t _count_pixels = GC9A01A_TFTWIDTH * GC9A01A_TFTHEIGHT;
-  DMASetting _dmasettings[3];
-  DMAChannel _dmatx;
+  static GC9A01A_DMA_Data_t _dma_data[3]; // one structure for each possible SPI buss
+  //DMASetting _dmasettings[3];
+  //DMAChannel _dmatx;
   volatile uint32_t _dma_pixel_index = 0;
   uint16_t _dma_buffer_size; // the actual size we are using <= DMA_BUFFER_SIZE;
   uint16_t _dma_cnt_sub_frames_per_frame;
   uint32_t _spi_fcr_save; // save away previous FCR register value
-  static void dmaInterrupt1(void);
-  static void dmaInterrupt2(void);
 #elif defined(__MK64FX512__)
   // T3.5 - had issues scatter/gather so do just use channels/interrupts
   // and update and continue
@@ -732,6 +739,8 @@ protected:
   static uint16_t _dma_write_size_words;
 #endif
   static void dmaInterrupt(void);
+  static void dmaInterrupt1(void);
+  static void dmaInterrupt2(void);
   void process_dma_interrupt(void);
 #endif
   void charBounds(char c, int16_t *x, int16_t *y, int16_t *minx, int16_t *miny,
@@ -739,12 +748,29 @@ protected:
 
   void setAddr(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
       __attribute__((always_inline)) {
+    #if 1
     writecommand_cont(GC9A01A_CASET); // Column addr set
     writedata16_cont(x0);             // XSTART
     writedata16_cont(x1);             // XEND
     writecommand_cont(GC9A01A_PASET); // Row addr set
     writedata16_cont(y0);             // YSTART
     writedata16_cont(y1);             // YEND
+    #else
+    if ((x0 != _x0_last) || (x1 != _x1_last)) {
+      writecommand_cont(GC9A01A_CASET); // Column addr set
+      writedata16_cont(x0);             // XSTART
+      writedata16_cont(x1);             // XEND
+      _x0_last = x0;
+      _x1_last = x1;
+    }
+    if ((y0 != _y0_last) || (y1 != _y1_last)) {
+      writecommand_cont(GC9A01A_PASET); // Row addr set
+      writedata16_cont(y0);             // YSTART
+      writedata16_cont(y1);             // YEND
+      _y0_last = y0;
+      _y1_last = y1;
+    }
+    #endif    
   }
 //. From Onewire utility files
 #if defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
