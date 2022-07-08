@@ -2,6 +2,8 @@
 #include "Horizon_Background.h"
 #include "Horizon_GroundSky.h"
 #include "Maquette_Avion.h"
+#include "HeadingIndicator_Aircraft.h"
+#include "HeadingWeel.h"
 
 void setup() {
   init();
@@ -24,13 +26,22 @@ void setup() {
   translateY = 0;
   //translateY = 20;  // 5 degrees = 20 pixels, nose up
 //  Pause();
-  bmpDisp(Horizon_GroundSky_image, Horizon_GroundSky_width, Horizon_GroundSky_height, true);
+  //bmpDisp(Horizon_GroundSky_image, Horizon_GroundSky_width, Horizon_GroundSky_height, true);
 //  Pause();
-  Rotate_and_Draw_Bitmap(Maquette_Avion_image, Maquette_Avion_width, Maquette_Avion_height, 45.0f, 48, 25, 0, 0);
+  //Rotate_and_Draw_Bitmap(Maquette_Avion_image, Maquette_Avion_width, Maquette_Avion_height, 45.0f, 48, 25, 0, 0);
  // Pause();
-  bmpDisp(Horizon_Background_image, Horizon_Background_width, Horizon_Background_height, true);
+  //bmpDisp(Horizon_Background_image, Horizon_Background_width, Horizon_Background_height, true);
 //  Pause();
+ // tft.updateScreen();
+
+  //Pause();
+  //bmpDisp(HeadingWeel_image, HeadingWeel_width, HeadingWeel_height, true);
+  tft.fillScreen(BLACK);
+  Rotate_and_Draw_Bitmap(HeadingWeel_image, HeadingWeel_width, HeadingWeel_height, 45.0f, 119, 119, 0, 10);
+  bmpDisp(HeadingIndicator_Aircraft_image, HeadingIndicator_Aircraft_width, HeadingIndicator_Aircraft_height, true);
+
   tft.updateScreen();
+  Pause();
 
   Serial.printf("End Setup");
 
