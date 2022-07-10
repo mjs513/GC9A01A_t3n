@@ -255,13 +255,6 @@ typedef struct {
 
 #endif // _GFXFONT_H_
 
-#if defined(__IMXRT1062__)  // Teensy 4.x
-// Also define these in lower memory so as to make sure they are not cached...
-typedef struct {
-  DMASetting      _dmasettings[2];
-  DMAChannel      _dmatx;
-} GC9A01A_DMA_Data_t;
-#endif
 
 
 // These enumerate the text plotting alignment (reference datum point)
@@ -295,6 +288,15 @@ typedef struct {
 #define GC9A01A_SPICLOCK 30000000
 #define GC9A01A_SPICLOCK_READ 2000000
 #endif
+
+#if defined(__IMXRT1062__)  // Teensy 4.x
+// Also define these in lower memory so as to make sure they are not cached...
+typedef struct {
+  DMASetting      _dmasettings[2];
+  DMAChannel      _dmatx;
+} GC9A01A_DMA_Data_t;
+#endif
+
 
 class GC9A01A_t3n : public Print {
 public:
