@@ -48,7 +48,7 @@ const ili_fonts_test_t font_test_list[] = {
 #define TFT_CS 10
 #define TFT_RST 8
 #define TFT_SCK 13
-#define TFT_MISO 12
+//#define TFT_MISO 12
 #define TFT_MOSI 11
 #define TOUCH_CS  6
 

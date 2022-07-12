@@ -27,13 +27,13 @@ GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST);
 #define TFT_CS 15
 #define TFT_RST -1
 #define TFT_SCK 14
-#define TFT_MISO 12
+//#define TFT_MISO 12
 #define TFT_MOSI 7
 #define DEBUG_PIN 13
 
 #elif defined(FRANKS_C64)
 #define SCK       14
-#define MISO      39
+//#define MISO      39
 #define MOSI      28
 #define TFT_TOUCH_CS    38
 #define TFT_TOUCH_INT   37
@@ -42,14 +42,14 @@ GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST);
 #define TFT_RST        -1  // 255 = unused, connected to 3.3V
 #define TFT_SCK        SCK
 #define TFT_MOSI        MOSI
-#define TFT_MISO        MISO
+//#define TFT_MISO        MISO
 
 #elif defined(DEFAULT_PINS)
 #define TFT_DC  9
 #define TFT_CS 10
 #define TFT_RST 8
 #define TFT_SCK 13
-#define TFT_MISO 12
+//#define TFT_MISO 12
 #define TFT_MOSI 11
 
 #elif defined(USE_SPI1)
@@ -57,7 +57,7 @@ GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST);
 #define TFT_CS 10 // any pin will work not hardware
 #define TFT_RST 8
 #define TFT_SCK 32
-#define TFT_MISO 5
+//#define TFT_MISO 5
 #define TFT_MOSI 21
 #define DEBUG_PIN 13
 #else
@@ -66,10 +66,10 @@ GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST);
 #define TFT_CS 10
 #define TFT_RST 7
 #define TFT_SCK 13
-#define TFT_MISO 12
+//#define TFT_MISO 12
 #define TFT_MOSI 11
 #endif
-GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
+GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK);
 #endif
 
 Adafruit_GFX_Button button;
@@ -88,7 +88,7 @@ uint8_t use_fb = 0;
 void setup() {
   while (!Serial && (millis() < 4000)) ;
   Serial.begin(115200);
-  //Serial.printf("Begin: CS:%d, DC:%d, MOSI:%d, MISO: %d, SCK: %d, RST: %d\n", TFT_CS, TFT_DC, TFT_MOSI, TFT_MISO, TFT_SCK, TFT_RST);
+  //Serial.printf("Begin: CS:%d, DC:%d, MOSI:%d, SCK: %d, RST: %d\n", TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST);
 
   tft.begin();
   tft.setFrameBuffer(tft_frame_buffer);

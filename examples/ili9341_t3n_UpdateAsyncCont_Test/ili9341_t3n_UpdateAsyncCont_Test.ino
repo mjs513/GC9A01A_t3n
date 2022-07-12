@@ -22,14 +22,14 @@ elapsedMicros _dt;
 #define TFT_DC  38
 #define TFT_CS 37
 #define TFT_MOSI 26
-#define TFT_MISO 39
+//#define TFT_MISO 39
 #define TFT_SCK 27
 #else
 #define TFT_RST 8
 #define TFT_DC  31
 #define TFT_CS 30
 #define TFT_MOSI 0
-#define TFT_MISO 1
+//#define TFT_MISO 1
 #define TFT_SCK 32
 #endif
 #elif defined(ARDUINO_TEENSY35) || defined(ARDUINO_TEENSY36)
@@ -38,7 +38,7 @@ elapsedMicros _dt;
 #define TFT_CS 15
 #define TFT_RST -1
 #define TFT_SCK 14
-#define TFT_MISO 12
+//#define TFT_MISO 12
 #define TFT_MOSI 7
 #define DEBUG_PIN 13
 #else
@@ -46,10 +46,10 @@ elapsedMicros _dt;
 #define TFT_DC  9
 #define TFT_CS 10
 #define TFT_MOSI 11
-#define TFT_MISO 12
+//#define TFT_MISO 12
 #define TFT_SCK 13
 #endif
-GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
+GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK);
 
 uint16_t our_pallet[] = {
   BLACK,  RED, GREEN,  BLUE,

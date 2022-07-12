@@ -29,7 +29,7 @@ It detects this by looking at which pins were specified on the constructor.
 
 ```
   GC9A01A_t3n(uint8_t _CS, uint8_t _DC, uint8_t _RST = 255, uint8_t _MOSI = 11,
-              uint8_t _SCLK = 13, uint8_t _MISO = 12);
+              uint8_t _SCLK = 13);
 ```
 
 When the begin method is called.  The parameters passed in for MISO/MOSI/SCK are checked to see if they are valid 
