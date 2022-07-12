@@ -23,11 +23,11 @@
 #define TFT_CS 10
 #define TFT_RST 8
 #define TFT_SCK 13
-#define TFT_MISO 12
+//#define TFT_MISO 12  // not used
 #define TFT_MOSI 11
 #define TOUCH_CS  6
 
-GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
+GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK);
 
 #define DEBUG_PIN 0
 

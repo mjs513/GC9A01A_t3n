@@ -576,6 +576,9 @@ public:
 #endif
   }
 
+  // Setup to send a command with parameters like ST77xx code
+  void sendCommand(uint8_t commandByte, const uint8_t *dataBytes, uint8_t numDataBytes);
+
 protected:
   SPIClass *_pspi = nullptr;
   SPIClass::SPI_Hardware_t *_spi_hardware;

@@ -190,24 +190,12 @@ void setup(void) {
   // eyelid handling in the drawEye() function -- no need for distinct
   // L-to-R or R-to-L inner loops.  Just the X coordinate of the iris is
   // then reversed when drawing this eye, so they move the same.  Magic!
-#if 0
-#ifdef USE_ST7789
   // The values for setRotation would be: 0XC8(-MX), 0xA8(+MY), 0x8(-MX), 0x68(+MY)
   // 0xC0, A0, 0, 60
-  const uint8_t mirrorTFT[]  = { 0x80, 0x20, 0x40, 0xE0 }; // Mirror+rotate
-#else
-  // The values for setRotation would be: 0XC8(-MX), 0xA8(+MY), 0x8(-MX), 0x68(+MY)
-
-  const uint8_t mirrorTFT[]  = { 0x88, 0x28, 0x48, 0xE8 }; // Mirror+rotate
-#endif
+  const uint8_t mirrorTFT[]  = { 0x8, 0x20, 0x40, 0xE0 }; // Mirror+rotate
   eye[0].display->sendCommand(
-#ifdef ST77XX_MADCTL
-    ST77XX_MADCTL, // Current TFT lib
-#else
-    ST7735_MADCTL, // Older TFT lib
-#endif
+    GC9A01A_MADCTL, // Current TFT lib
     &mirrorTFT[eyeInfo[0].rotation & 3], 1);
-#endif
 
 #ifdef DISPLAY_BACKLIGHT
   Serial.println("Backlight on!");

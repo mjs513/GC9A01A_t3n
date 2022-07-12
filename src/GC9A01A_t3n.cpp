@@ -4559,6 +4559,21 @@ void GC9A01A_t3n::resetScrollBackgroundColor(uint16_t color) {
   scrollbgcolor = color;
 }
 
+void GC9A01A_t3n::sendCommand(uint8_t commandByte, const uint8_t *dataBytes, uint8_t numDataBytes) {
+    beginSPITransaction(_SPI_CLOCK);
+
+    if (numDataBytes) writecommand_cont(commandByte); // Send the command byte
+    else  writecommand_last(commandByte);
+    while (numDataBytes > 1) {
+    writedata8_cont(*dataBytes++); // Send the data bytes
+    numDataBytes--;
+    }
+    if (numDataBytes) writedata8_last(*dataBytes);
+  
+    endSPITransaction();
+}
+
+
 //////////////////////////////////////////////////////
 // From Spin:
 #if defined(KINETISK)

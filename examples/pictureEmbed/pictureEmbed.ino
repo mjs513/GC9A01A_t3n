@@ -17,10 +17,10 @@
 #define TFT_CS 10
 #define TFT_RST 8
 #define TFT_SCK 13
-#define TFT_MISO 12
+//#define TFT_MISO 12
 #define TFT_MOSI 11
 
-GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK, TFT_MISO);
+GC9A01A_t3n tft = GC9A01A_t3n(TFT_CS, TFT_DC, TFT_RST, TFT_MOSI, TFT_SCK);
 
 void setup() {
   tft.begin();
