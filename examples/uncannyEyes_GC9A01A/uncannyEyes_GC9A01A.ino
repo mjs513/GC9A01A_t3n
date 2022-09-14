@@ -51,7 +51,7 @@ typedef GC9A01A_t3n displayType; // Using TFT display(s)
 
 #include "config.h"     // ****** CONFIGURATION IS DONE IN HERE ******
 
-#define RGBColor(r, g, b) ST7735_t3x::Color565(r, g, b)
+#define RGBColor(r, g, b) GC9A01A_t3n::Color565(r, g, b)
 
 // A simple state machine is used to control eye blinks/winks:
 #define NOBLINK 0       // Not currently engaged in a blink
@@ -133,7 +133,6 @@ void setup(void) {
 
   // After all-displays reset, now call init/begin func for each display:
   for (e = 0; e < NUM_EYES; e++) {
-    // Try to handle the ST7789 displays without CS PINS.
     eye[e].display->begin();
     Serial.print("Init ST77xx display #"); Serial.println(e);
     Serial.println("Rotate");
