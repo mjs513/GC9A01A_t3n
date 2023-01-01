@@ -850,8 +850,9 @@ protected:
     waitTransmitComplete(mcr);
   }
 #elif defined(__IMXRT1052__) || defined(__IMXRT1062__) // Teensy 4.x
-  enum {TCR_MASK  = (LPSPI_TCR_PCS(3) | LPSPI_TCR_FRAMESZ(31) | LPSPI_TCR_CONT | LPSPI_TCR_RXMSK )};
-
+#ifndef TCR_MASK
+#define TCR_MASK  (LPSPI_TCR_PCS(3) | LPSPI_TCR_FRAMESZ(31) | LPSPI_TCR_CONT | LPSPI_TCR_RXMSK )
+#endif
   void maybeUpdateTCR(
       uint32_t requested_tcr_state) /*__attribute__((always_inline)) */ {
     if ((_spi_tcr_current & TCR_MASK) != requested_tcr_state) {
@@ -1042,7 +1043,7 @@ protected:
   void clearChangedRange() {
     _changed_min_x = 0x7fff;
     _changed_max_x = -1;
-    _changed_min_y = 0x7fff;
+    _changed_min_x = 0x7fff;
     _changed_max_y = -1;
   }
 
