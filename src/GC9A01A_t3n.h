@@ -1045,7 +1045,7 @@ protected:
   void clearChangedRange() {
     _changed_min_x = 0x7fff;
     _changed_max_x = -1;
-    _changed_min_x = 0x7fff;
+    _changed_min_y = 0x7fff;
     _changed_max_y = -1;
   }
 
